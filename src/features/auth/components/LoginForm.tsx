@@ -41,24 +41,28 @@ export function LoginForm() {
     try {
       // Call the login mutation — credentials are auto-dispatched
       // to Redux via onQueryStarted in authApi
-      const result = await login({ email, password }).unwrap();
+      // Note: Backend expects the field name "login" for the email address
+      const result = await login({ login: email, password }).unwrap();
 
-      // Show success toast
+      // Show success toast — API response is wrapped: { success, message, data: { user, token } }
       toast({
         title: "Login successful",
-        description: `Welcome back, ${result.user.name}!`,
+        description: `Welcome back, ${result.data.user.name}!`,
       });
 
       // Navigate to dashboard
       navigate("/dashboard");
     } catch (err: unknown) {
-      // Error handling
-      const error = err as { data?: { message?: string } };
+      // Error handling — backend returns { success, message, errors }
+      const error = err as {
+        data?: { message?: string; errors?: Record<string, string[]> };
+      };
+      const errorMessage =
+        error?.data?.message || "Invalid credentials. Please try again.";
       toast({
         variant: "destructive",
         title: "Login failed",
-        description:
-          error?.data?.message || "Invalid credentials. Please try again.",
+        description: errorMessage,
       });
     }
   };

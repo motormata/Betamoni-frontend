@@ -6,7 +6,7 @@ import {
   type FetchBaseQueryError,
 } from "@reduxjs/toolkit/query/react";
 import type { RootState } from "@/store";
-import { clearCredentials, setCredentials } from "@/store/slices/authSlice";
+import { clearCredentials } from "@/store/slices/authSlice";
 
 // ── Raw base query ─────────────────────────────────────────────────
 
@@ -26,7 +26,11 @@ const rawBaseQuery = fetchBaseQuery({
   },
 });
 
-// ── Base query with automatic re-auth on 401 ──────────────────────
+// ── Endpoints that should NOT trigger automatic re-auth ────────────
+// These are auth-lifecycle endpoints — retrying them would cause loops.
+const SKIP_REAUTH_URLS = ["/api/login", "/api/logout", "/api/me"];
+
+// ── Base query with 401 handling ───────────────────────────────────
 
 const baseQueryWithReauth: BaseQueryFn<
   string | FetchArgs,
@@ -34,49 +38,17 @@ const baseQueryWithReauth: BaseQueryFn<
   FetchBaseQueryError
 > = async (args, api, extraOptions) => {
   // 1. Try the original request
-  let result = await rawBaseQuery(args, api, extraOptions);
+  const result = await rawBaseQuery(args, api, extraOptions);
 
-  // 2. If we got a 401, attempt token refresh
+  // 2. If we got a 401, check if we should auto-logout
   if (result.error && result.error.status === 401) {
-    const state = api.getState() as RootState;
-    const refreshToken = state.auth.refreshToken;
+    // Extract the URL from the request args
+    const requestUrl = typeof args === "string" ? args : args.url;
 
-    if (refreshToken) {
-      // Attempt to refresh the token
-      const refreshResult = await rawBaseQuery(
-        {
-          url: "/api/refresh",
-          method: "POST",
-          body: { refreshToken },
-        },
-        api,
-        extraOptions,
-      );
-
-      if (refreshResult.data) {
-        // Refresh succeeded — store new tokens and retry original request
-        const data = refreshResult.data as {
-          token: string;
-          refreshToken: string;
-          user: RootState["auth"]["user"];
-        };
-
-        api.dispatch(
-          setCredentials({
-            token: data.token,
-            refreshToken: data.refreshToken,
-            user: data.user ?? state.auth.user!,
-          }),
-        );
-
-        // Retry the original request with the new token
-        result = await rawBaseQuery(args, api, extraOptions);
-      } else {
-        // Refresh failed — force logout
-        api.dispatch(clearCredentials());
-      }
-    } else {
-      // No refresh token available — force logout
+    // Skip auto-logout for auth-lifecycle endpoints
+    // These endpoints handle their own error cases
+    if (!SKIP_REAUTH_URLS.some((url) => requestUrl.includes(url))) {
+      // For non-auth endpoints, a 401 means the token is invalid — force logout
       api.dispatch(clearCredentials());
     }
   }

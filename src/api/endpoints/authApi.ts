@@ -3,7 +3,7 @@ import type {
   LoginCredentials,
   AuthResponse,
   User,
-  RefreshTokenResponse,
+  ApiResponse,
 } from "@/types/auth.types";
 import {
   setCredentials,
@@ -22,16 +22,18 @@ export const authApi = baseApi.injectEndpoints({
         method: "POST",
         body: credentials,
       }),
-      invalidatesTags: ["Auth"],
-      // Persist credentials to Redux after successful login
+      // NOTE: Do NOT use invalidatesTags here!
+      // It would trigger a refetch of getCurrentUser (providesTags: ['Auth']),
+      // which races with the login response and causes spurious 401 errors.
       async onQueryStarted(_args, { dispatch, queryFulfilled }) {
         try {
-          const { data } = await queryFulfilled;
+          const { data: response } = await queryFulfilled;
+          // API wraps responses in { success, message, data: { user, token, token_type } }
           dispatch(
             setCredentials({
-              token: data.token,
-              refreshToken: data.refreshToken,
-              user: data.user,
+              token: response.data.token,
+              refreshToken: null,
+              user: response.data.user,
             }),
           );
         } catch {
@@ -46,45 +48,32 @@ export const authApi = baseApi.injectEndpoints({
         url: "/api/logout",
         method: "POST",
       }),
-      invalidatesTags: ["Auth"],
-      // Clear credentials regardless of API success/failure
+      // NOTE: Do NOT use invalidatesTags here!
       async onQueryStarted(_args, { dispatch, queryFulfilled }) {
-        // Optimistic: clear immediately so UI updates right away
-        dispatch(clearCredentials());
         try {
           await queryFulfilled;
         } catch {
           // Even if backend logout fails, we still clear local state
-        }
-      },
-    }),
-
-    // ── Get Current User ─────────────────────────────────────────
-    getCurrentUser: builder.query<User, void>({
-      query: () => "/api/me",
-      providesTags: ["Auth"],
-      // Update user in Redux when fetched
-      async onQueryStarted(_args, { dispatch, queryFulfilled }) {
-        try {
-          const { data } = await queryFulfilled;
-          dispatch(setUser(data));
-        } catch {
-          // If fetching user fails (e.g., invalid token), clear auth
+        } finally {
           dispatch(clearCredentials());
         }
       },
     }),
 
-    // ── Refresh Token ────────────────────────────────────────────
-    refreshToken: builder.mutation<
-      RefreshTokenResponse,
-      { refreshToken: string }
-    >({
-      query: (body) => ({
-        url: "/api/refresh",
-        method: "POST",
-        body,
-      }),
+    // ── Get Current User ─────────────────────────────────────────
+    getCurrentUser: builder.query<ApiResponse<User>, void>({
+      query: () => "/api/me",
+      providesTags: ["Auth"],
+      async onQueryStarted(_args, { dispatch, queryFulfilled }) {
+        try {
+          const { data: response } = await queryFulfilled;
+          // API wraps user in { success, message, data: User }
+          dispatch(setUser(response.data));
+        } catch {
+          // If fetching user fails (e.g., invalid token), clear auth
+          dispatch(clearCredentials());
+        }
+      },
     }),
   }),
 });
@@ -94,5 +83,4 @@ export const {
   useLogoutMutation,
   useGetCurrentUserQuery,
   useLazyGetCurrentUserQuery,
-  useRefreshTokenMutation,
 } = authApi;

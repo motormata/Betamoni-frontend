@@ -24,7 +24,7 @@ const authSlice = createSlice({
       state,
       action: PayloadAction<{
         token: string;
-        refreshToken: string;
+        refreshToken: string | null;
         user: User;
       }>,
     ) => {
@@ -34,7 +34,9 @@ const authSlice = createSlice({
       state.isAuthenticated = true;
 
       localStorage.setItem("token", action.payload.token);
-      localStorage.setItem("refreshToken", action.payload.refreshToken);
+      if (action.payload.refreshToken) {
+        localStorage.setItem("refreshToken", action.payload.refreshToken);
+      }
     },
 
     /**

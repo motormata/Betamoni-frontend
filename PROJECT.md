@@ -6,37 +6,43 @@
 **Type:** Internal admin application  
 **Purpose:** Mobile-first fintech admin interface for BetaMoni, a Nigerian nano-lending platform that provides quick, small loans to market women and traders.
 
-**Current Phase:** Starting with authentication module  
-**Target Users:** Admins, Supervisors, and Superadmins
+**Current Phase:** Dashboard Layout & Core Features (Authentication Phase Completed)  
+**Target Users:** Admins, Supervisors, and Superadmins representing the internal BetaMoni team.
 
 ---
 
 ## Tech Stack
 
 ### Core Framework
+
 - **React 18** with TypeScript
 - **Vite** - Build tool and dev server
 - **React Router v7** - Navigation (declarative mode)
 
 ### State Management
+
 - **Redux Toolkit** - Global state management
 - **RTK Query** - API calls, caching, and server state
 
 ### Styling & UI
+
 - **Tailwind CSS v3.4** - Utility-first CSS framework
 - **shadcn/ui** - Customizable component library
 - **CSS Variables** - Design tokens approach
 - **Lucide React** - Icon library
 
 ### Animation & Interaction
+
 - **Framer Motion** - Animation library
 
 ### Development Tools
+
 - **TypeScript** - Type safety
 - **Vitest** - Testing framework
 - **npm** - Package manager
 
 ### Build Configuration
+
 - **PostCSS** - CSS processing
 - **Autoprefixer** - Browser compatibility
 
@@ -45,42 +51,52 @@
 ## Architecture Decisions
 
 ### 1. Feature-Based Folder Structure
+
 **Decision:** Organize by features, not file types  
-**Rationale:** 
+**Rationale:**
+
 - Fintech apps grow complex quickly
 - Each feature (auth, loans, users) is self-contained
 - Easier to locate bugs and maintain code
 - Scales better for medium/large applications
 
 ### 2. Centralized API Layer (Option A)
+
 **Decision:** All API endpoints in `/src/api/endpoints/`  
 **Rationale:**
+
 - Fintech requires audit trails - easy to see all API calls
 - Solo developer - no team conflicts about ownership
 - RTK Query encourages centralized setup
 - Better for compliance and security reviews
 
 ### 3. Design System First
+
 **Decision:** Set up design tokens before building components  
 **Rationale:**
+
 - Ensures visual consistency from day one
 - Components automatically inherit design decisions
 - Easy to rebrand or adjust styling globally
 - Mobile-first approach requires careful spacing/typography
 
 ### 4. Tailwind v3.4 (Stable) Over v4 (Beta)
+
 **Decision:** Use production-ready v3.4  
 **Rationale:**
+
 - v4 is still in beta
 - v3.4 is battle-tested and stable
 - Lower risk for production fintech application
 
-### 5. JWT in localStorage (Current - May Change)
-**Decision:** Store auth token in localStorage  
+### 5. JWT in localStorage synced with Redux AuthSlice
+
+**Decision:** Store auth token in Redux (`authSlice`) and sync with localStorage  
 **Rationale:**
-- Simple to implement while backend is in development
-- Can migrate to httpOnly cookies later for better security
-- Backend authentication method not yet finalized
+
+- Redux is the single source of truth for the application state.
+- LocalStorage provides cross-refresh persistence so the user doesn't get logged out on F5.
+- The `AuthProvider` component checks this token on mount and validates it against `/api/me`.
 
 ---
 
@@ -142,20 +158,24 @@ betamoni-admin/
 ### Folder Organization Rules
 
 **`/features`** - Feature modules
+
 - Each feature is self-contained
 - Only that feature uses components/pages inside
 - If 2+ features need something, move it to `/components`
 
 **`/components`** - Shared components
+
 - `/ui` = shadcn components (Button, Card, Input)
 - `/layout` = Layouts used across features
 - `/feedback` = Loading states, error boundaries
 
 **`/api`** - API layer
+
 - `baseApi.ts` = RTK Query base setup
 - `/endpoints` = Specific API endpoints by feature
 
 **`/store`** - Redux state
+
 - `index.ts` = Store configuration
 - `hooks.ts` = Typed useSelector/useDispatch
 - `/slices` = Redux slices for non-API state
@@ -195,6 +215,7 @@ All visual decisions live in CSS variables, mapped to Tailwind utilities.
 ### Naming Convention
 
 **Semantic naming** (by purpose, not appearance):
+
 - ✅ `--primary` (tells you when to use it)
 - ❌ `--green-500` (doesn't tell you meaning)
 
@@ -202,9 +223,7 @@ All visual decisions live in CSS variables, mapped to Tailwind utilities.
 
 ```tsx
 // Tailwind automatically reads CSS variables
-<button className="bg-primary text-primary-foreground">
-  Login
-</button>
+<button className="bg-primary text-primary-foreground">Login</button>
 ```
 
 ### Mobile-First Typography
@@ -227,37 +246,38 @@ All visual decisions live in CSS variables, mapped to Tailwind utilities.
 **Slice** - One feature's state (e.g., auth slice, UI slice)  
 **Reducer** - Pure function that updates state  
 **Action** - Event that happened (user clicked, data arrived)  
-**Selector** - Read specific data from store  
+**Selector** - Read specific data from store
 
 ### RTK Query Concepts
 
 **Query** - GET requests (reading data)
+
 - Auto-fetches on component mount
 - Caches results
 - Shares data across components
 
 **Mutation** - POST/PUT/DELETE requests (changing data)
+
 - Manually triggered
 - Returns [trigger, result]
 - Used for login, create, update, delete
 
 **Tags** - Cache invalidation system
+
 - `providesTags`: "This data is about X"
 - `invalidatesTags`: "Refetch all data about X"
 
 ### Authentication Flow
 
 ```
-1. User submits login form
-2. Component calls useLoginMutation()
-3. RTK Query makes POST /auth/login
-4. prepareHeaders() adds any existing token
-5. Server responds with { token, user }
-6. Save token to localStorage
-7. invalidatesTags: ['Auth'] triggers refetch
-8. Navigate to dashboard
-9. ProtectedRoute checks token exists
-10. Dashboard renders
+1. User submits login form (`{ login, password }`)
+2. Component calls `useLoginMutation()`
+3. RTK Query hits POST `/api/login`
+4. Server responds with an envelope: `{ success: true, message: "Login successful", data: { user, token, token_type } }`
+5. `authApi`'s `onQueryStarted` extracts the nested `data.token` and `data.user`
+6. `authApi` dispatches `setCredentials` which saves state to Redux and localStorage
+7. UI reacts to `isAuthenticated === true` and redirects to `/dashboard`
+8. On reload, `AuthProvider` reads the token and calls `useLazyGetCurrentUserQuery` (`/api/me`) to validate the session.
 ```
 
 ### Base API Configuration
@@ -265,6 +285,7 @@ All visual decisions live in CSS variables, mapped to Tailwind utilities.
 **Location:** `src/api/baseApi.ts`
 
 **Key Features:**
+
 - Automatic auth header injection via `prepareHeaders`
 - Centralized error handling
 - Tag-based cache invalidation
@@ -287,6 +308,7 @@ All visual decisions live in CSS variables, mapped to Tailwind utilities.
 ### shadcn/ui Components
 
 **Philosophy:** Copy, don't install
+
 - Components live in your codebase (`/components/ui`)
 - Fully customizable
 - Use design tokens automatically
@@ -309,30 +331,33 @@ Used for complex components with multiple parts:
 ### Pattern: Container/Presenter (Smart/Dumb)
 
 **Container** (Smart) - Handles logic, data fetching:
+
 ```tsx
 function LoginContainer() {
-  const [login, { isLoading }] = useLoginMutation()
-  return <LoginForm onSubmit={login} isLoading={isLoading} />
+  const [login, { isLoading }] = useLoginMutation();
+  return <LoginForm onSubmit={login} isLoading={isLoading} />;
 }
 ```
 
 **Presenter** (Dumb) - Just renders UI:
+
 ```tsx
 function LoginForm({ onSubmit, isLoading }) {
-  return <form onSubmit={onSubmit}>...</form>
+  return <form onSubmit={onSubmit}>...</form>;
 }
 ```
 
 ### Pattern: Custom Hooks
 
 Extract reusable logic:
+
 ```tsx
 function useAuth() {
-  const [login] = useLoginMutation()
-  const [logout] = useLogoutMutation()
-  const { data: user } = useGetCurrentUserQuery()
-  
-  return { login, logout, user }
+  const [login] = useLoginMutation();
+  const [logout] = useLogoutMutation();
+  const { data: user } = useGetCurrentUserQuery();
+
+  return { login, logout, user };
 }
 ```
 
@@ -373,31 +398,32 @@ function useAuth() {
    - Button, Input, Card, Label, Toast installed
    - Consistent styling via design tokens
 
+7. **Backend Integration & Authentication**
+   - Connected to live dev backend (`api.dev.betamoni.com.ng`)
+   - Completed end-to- natural login/logout flow
+   - Handled API response envelopes (`ApiResponse<T>`)
+   - Persistent login via `AuthProvider` layer
+   - Role-based access control established
+
+8. **Version Control**
+   - Git initialized
+   - `.gitignore` configured to protect `.env` secrets
+   - Code pushed to `motormata/Betamoni-frontend` repo
+
 ### 🚧 In Progress / Pending
 
-1. **Backend Integration**
-   - Currently using mock mode
-   - Waiting for actual API endpoints
-   - Need to test with real authentication
-
-2. **Dashboard Layout**
+1. **Dashboard Layout**
    - Sidebar navigation
-   - Header with user info
+   - Header with user profile and quick actions
    - Main content area
    - Mobile responsive menu
 
-3. **Complete Auth Flow**
-   - Logout functionality
-   - Token refresh mechanism
-   - Persistent login (check token on mount)
-   - Role-based access control
-
-4. **Loading States**
+2. **Loading States**
    - Global loader for route transitions
    - Page-level skeletons
    - Component-level loading indicators
 
-5. **Error Handling**
+3. **Error Handling**
    - Error boundary component
    - Better error messages
    - Retry logic for failed requests
@@ -418,16 +444,18 @@ function useAuth() {
 ### Development Environment
 
 **File:** `.env.development`
+
 ```
-VITE_API_BASE_URL=http://localhost:8000/api
+VITE_API_BASE_URL=https://api.dev.betamoni.com.ng
 VITE_APP_NAME=BetaMoni Admin (Dev)
 ```
 
 ### Production Environment
 
 **File:** `.env.production`
+
 ```
-VITE_API_BASE_URL=https://api.betamoni.com
+VITE_API_BASE_URL=https://api.betamoni.com.ng  # (Placeholder until confirmed)
 VITE_APP_NAME=BetaMoni Admin
 ```
 
@@ -436,13 +464,14 @@ VITE_APP_NAME=BetaMoni Admin
 **File:** `src/lib/env.ts`
 
 Centralized env variable access with validation:
+
 ```ts
 export const ENV = {
-  API_BASE_URL: getEnvVar('VITE_API_BASE_URL'),
-  APP_NAME: getEnvVar('VITE_APP_NAME'),
+  API_BASE_URL: getEnvVar("VITE_API_BASE_URL"),
+  APP_NAME: getEnvVar("VITE_APP_NAME"),
   IS_DEV: import.meta.env.DEV,
   IS_PROD: import.meta.env.PROD,
-}
+};
 ```
 
 **Note:** All env variables must be prefixed with `VITE_` to be exposed to the browser.
@@ -452,11 +481,13 @@ export const ENV = {
 ## Code Conventions
 
 ### File Naming
+
 - Components: PascalCase (`LoginForm.tsx`, `UserCard.tsx`)
 - Utilities: camelCase (`utils.ts`, `env.ts`)
 - Types: camelCase with `.types.ts` suffix (`auth.types.ts`)
 
 ### Component Structure
+
 - One component per file
 - Export component as named export or default
 - Props interface defined above component
@@ -465,6 +496,7 @@ export const ENV = {
 - JSX return at bottom
 
 ### Import Order
+
 1. React imports
 2. Third-party libraries
 3. Internal utilities (@/lib)
@@ -473,6 +505,7 @@ export const ENV = {
 6. Relative imports
 
 ### TypeScript Guidelines
+
 - Always define types for props
 - Use interfaces for objects
 - Use type for unions/primitives
@@ -480,6 +513,7 @@ export const ENV = {
 - Leverage type inference when obvious
 
 ### Styling Guidelines
+
 - Use Tailwind utility classes
 - Use `cn()` utility for conditional classes
 - Avoid inline styles unless dynamic
@@ -490,25 +524,18 @@ export const ENV = {
 
 ## API Integration Guide
 
-### Current State: Mock Mode
+### Current State: Live Integration (Dev Environment)
 
-Authentication endpoints are currently mocked:
-- Mock credentials: `admin@betamoni.com` / `password`
-- 1-second artificial delay to simulate network
-- Returns mock token and user data
+Authentication endpoints are fully wired up to the live development backend:
 
-### Switching to Real Backend
-
-**Steps:**
-1. Get actual API endpoints from backend team
-2. Update `.env.development` with correct base URL
-3. In `authApi.ts`, remove mock `queryFn`, use real `query`
-4. Update TypeScript types to match real API responses
-5. Test all flows with real data
+- Dev API: `https://api.dev.betamoni.com.ng/api`
+- All responses use an envelope structure: `{ success, message, data, errors }`
+- Token refresh is **not** implemented (backend handles token lifetime natively). A 401 error results in an immediate clear of credentials.
 
 ### Adding New Endpoints
 
 **Pattern to follow:**
+
 ```ts
 // 1. Define types
 interface CreateLoanRequest { ... }
@@ -537,22 +564,26 @@ export const { useCreateLoanMutation } = loansApi
 ## Testing Strategy
 
 ### Unit Tests (Vitest)
+
 - Test utility functions
 - Test custom hooks
 - Test Redux slices/reducers
 
 ### Component Tests
+
 - Test user interactions
 - Test form submissions
 - Test error states
 - Test loading states
 
 ### Integration Tests
+
 - Test complete user flows
 - Test API integration
 - Test navigation
 
 ### E2E Tests (Future)
+
 - Test critical user journeys
 - Test across different screen sizes
 - Test authentication flows
@@ -562,21 +593,25 @@ export const { useCreateLoanMutation } = loansApi
 ## Development Workflow
 
 ### Starting Development Server
+
 ```bash
 npm run dev
 ```
 
 ### Building for Production
+
 ```bash
 npm run build
 ```
 
 ### Running Tests
+
 ```bash
 npm run test
 ```
 
 ### Type Checking
+
 ```bash
 npx tsc --noEmit
 ```
@@ -633,11 +668,13 @@ Component will be added to `src/components/ui/`
 ## Security Considerations
 
 ### Current Implementation
+
 - Token stored in localStorage (development phase)
 - HTTPS required in production
 - No sensitive data in Redux DevTools production builds
 
 ### Future Improvements
+
 - Migrate to httpOnly cookies
 - Implement token refresh mechanism
 - Add CSRF protection
@@ -645,6 +682,7 @@ Component will be added to `src/components/ui/`
 - Add request signing for sensitive operations
 
 ### Best Practices
+
 - Never log sensitive data
 - Validate all user inputs
 - Sanitize data before displaying
@@ -656,12 +694,14 @@ Component will be added to `src/components/ui/`
 ## Performance Optimization
 
 ### Current Optimizations
+
 - Vite's fast HMR (Hot Module Replacement)
 - RTK Query automatic caching
 - Component lazy loading (via React.lazy)
 - Tailwind CSS purging unused styles
 
 ### Future Optimizations
+
 - Code splitting by route
 - Image optimization
 - Bundle size analysis
@@ -673,6 +713,7 @@ Component will be added to `src/components/ui/`
 ## Accessibility
 
 ### Current Standards
+
 - Semantic HTML elements
 - ARIA labels on interactive elements
 - Keyboard navigation support (via shadcn)
@@ -680,6 +721,7 @@ Component will be added to `src/components/ui/`
 - Color contrast compliance
 
 ### Testing
+
 - Test with keyboard navigation
 - Test with screen readers
 - Verify color contrast ratios
@@ -690,12 +732,14 @@ Component will be added to `src/components/ui/`
 ## Browser Support
 
 ### Target Browsers
+
 - Chrome (last 2 versions)
 - Firefox (last 2 versions)
 - Safari (last 2 versions)
 - Edge (last 2 versions)
 
 ### Mobile Support
+
 - iOS Safari (last 2 versions)
 - Chrome Android (last 2 versions)
 
@@ -704,6 +748,7 @@ Component will be added to `src/components/ui/`
 ## Deployment
 
 ### Build Process
+
 ```bash
 npm run build
 ```
@@ -711,9 +756,11 @@ npm run build
 Output in `dist/` folder, ready for static hosting.
 
 ### Environment Variables
+
 Set production environment variables in hosting platform.
 
 ### Recommended Platforms
+
 - Vercel (recommended for Vite apps)
 - Netlify
 - AWS S3 + CloudFront
@@ -724,12 +771,14 @@ Set production environment variables in hosting platform.
 ## Team Collaboration
 
 ### Before Working on a Feature
+
 1. Review this documentation
 2. Check current implementation status
 3. Follow established patterns
 4. Use typed hooks and utilities
 
 ### Code Review Checklist
+
 - Follows folder structure conventions
 - Uses design tokens (not hardcoded colors)
 - TypeScript types defined
@@ -743,6 +792,7 @@ Set production environment variables in hosting platform.
 ## Resources
 
 ### Official Documentation
+
 - [React](https://react.dev)
 - [Redux Toolkit](https://redux-toolkit.js.org)
 - [RTK Query](https://redux-toolkit.js.org/rtk-query/overview)
@@ -752,6 +802,7 @@ Set production environment variables in hosting platform.
 - [Vite](https://vitejs.dev)
 
 ### Design Resources
+
 - [Figma Design System](link-when-available)
 - Brand Guidelines (pending)
 
@@ -760,6 +811,7 @@ Set production environment variables in hosting platform.
 ## Questions & Support
 
 ### Developer Notes
+
 - This is the initial implementation
 - Architecture may evolve based on requirements
 - Document significant decisions in this file
@@ -767,6 +819,6 @@ Set production environment variables in hosting platform.
 
 ---
 
-**Last Updated:** February 25, 2026  
-**Project Phase:** Authentication Module (MVP)  
-**Next Milestone:** Dashboard Layout & First Feature Module
+**Last Updated:** March 2026  
+**Project Phase:** Dashboard Layout & Core Features  
+**Next Milestone:** Building the Sidebar, Header, and User Profile fetching

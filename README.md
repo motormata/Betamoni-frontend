@@ -1,73 +1,61 @@
-# React + TypeScript + Vite
+# BetaMoni Admin Dashboard
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+BetaMoni Admin is the internal administration interface for BetaMoni, a Nigerian nano-lending platform that provides quick, small loans to market women and traders. This application is built for the internal team (Superadmins, Supervisors, and Agents) to manage users, loans, policies, and system settings.
 
-Currently, two official plugins are available:
+## 🚀 Tech Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Framework:** React 18 + Vite
+- **Language:** TypeScript
+- **State Management:** Redux Toolkit + RTK Query
+- **Routing:** React Router v7
+- **Styling:** Tailwind CSS v3.4 + shadcn/ui
+- **Icons:** Lucide React
+- **Animations:** Framer Motion
 
-## React Compiler
+## 🛠️ Features Implemented
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **Authentication System:** Fully integrated with `api.dev.betamoni.com.ng`. Includes JWT token storage via Redux/localStorage, loading splash screens, and a robust 401 automatic logout handling sequence.
+- **Role-Based Access Control (RBAC):** Supports `super-admin`, `supervisor`, and `agent` roles with protected routes.
+- **Premium UI:** Custom designed login interface featuring modern glassmorphism, Framer Motion entrance animations, and the signature BetaMoni emerald branding.
 
-## Expanding the ESLint configuration
+## 📦 Getting Started
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### Prerequisites
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+- Node.js 18+
+- npm or yarn
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+### Installation
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+1. Clone the repository:
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+   ```bash
+   git clone https://github.com/motormata/Betamoni-frontend.git
+   cd betamoni-admin
+   ```
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+2. Install dependencies:
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+   ```bash
+   npm install
+   ```
+
+3. Set up environment variables:
+   Copy `.env.example` to `.env.development` and ensure the API URLs are correct:
+
+   ```bash
+   cp .env.example .env.development
+   ```
+
+4. Run the development server:
+   ```bash
+   npm run dev
+   ```
+
+## 📚 Project Documentation
+
+For an in-depth look at architecture decisions, design system tokens, folder structure, and API patterns, please read the [PROJECT.md](./PROJECT.md) file included in the root directory.
+
+## 🤝 Contributing
+
+This project strictly follows feature-based folder organization (`src/features/*`). When creating new modules, ensure all components, hooks, and pages specific to that module remain encapsulated within its feature folder. Shared UI components belong in `src/components/ui`.
