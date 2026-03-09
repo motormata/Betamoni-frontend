@@ -1,48 +1,60 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import { LoginPage } from "@/features/auth/pages/Login";
 import { ProtectedRoute } from "./ProtectedRoutes";
-import { LogoutButton } from "@/features/auth/components/LogoutButton";
-
-// ── Temporary Dashboard ────────────────────────────────────────────
-// This will be replaced with the real dashboard layout module
-
-function DashboardPage() {
-  return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b bg-card px-6 py-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold">BetaMoni Dashboard</h1>
-          <p className="text-sm text-muted-foreground">Admin Panel</p>
-        </div>
-        <LogoutButton />
-      </header>
-      <main className="p-8">
-        <p className="text-lg">You're logged in! 🎉</p>
-        <p className="text-muted-foreground mt-2">
-          Dashboard features coming soon.
-        </p>
-      </main>
-    </div>
-  );
-}
+import { AppLayout } from "@/components/layout/AppLayout";
+import { OverviewPage } from "@/features/dashboard/pages/OverviewPage";
+import { LoansPage } from "@/features/loans/pages/LoansPage";
+import { ClustersPage } from "@/features/clusters/pages/ClustersPage";
+import { StaffPage } from "@/features/staff/pages/StaffPage";
+import { SettingsPage } from "@/features/settings/pages/SettingsPage";
 
 // ── Route Definitions ──────────────────────────────────────────────
 
 export const router = createBrowserRouter([
-  {
-    path: "/",
-    element: <Navigate to="/login" replace />,
-  },
+  // Public routes
   {
     path: "/login",
     element: <LoginPage />,
   },
+
+  // Protected routes — wrapped in AppLayout shell
   {
-    path: "/dashboard",
     element: (
       <ProtectedRoute>
-        <DashboardPage />
+        <AppLayout />
       </ProtectedRoute>
     ),
+    children: [
+      {
+        index: true,
+        element: <Navigate to="/dashboard" replace />,
+      },
+      {
+        path: "dashboard",
+        element: <OverviewPage />,
+      },
+      {
+        path: "loans",
+        element: <LoansPage />,
+      },
+      {
+        path: "clusters",
+        element: <ClustersPage />,
+      },
+      {
+        path: "staff",
+        element: <StaffPage />,
+      },
+      {
+        path: "settings",
+        element: <SettingsPage />,
+      },
+    ],
+  },
+
+  // Catch-all redirect
+  {
+    path: "*",
+    element: <Navigate to="/dashboard" replace />,
   },
 ]);

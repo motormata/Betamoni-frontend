@@ -69,9 +69,14 @@ export const authApi = baseApi.injectEndpoints({
           const { data: response } = await queryFulfilled;
           // API wraps user in { success, message, data: User }
           dispatch(setUser(response.data));
-        } catch {
-          // If fetching user fails (e.g., invalid token), clear auth
-          dispatch(clearCredentials());
+        } catch (err: unknown) {
+          // Only clear credentials on 401 (token truly invalid).
+          // Server errors (500, 503, etc.) should NOT log the user out —
+          // the token may still be valid; the backend is just having issues.
+          const error = (err as { error?: { status?: number } })?.error;
+          if (error?.status === 401) {
+            dispatch(clearCredentials());
+          }
         }
       },
     }),
