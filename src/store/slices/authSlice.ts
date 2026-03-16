@@ -48,6 +48,15 @@ const authSlice = createSlice({
     },
 
     /**
+     * Updates just the token (e.g., after a successful refresh).
+     */
+    updateToken: (state, action: PayloadAction<string>) => {
+      state.token = action.payload;
+      state.isAuthenticated = true;
+      localStorage.setItem("token", action.payload);
+    },
+
+    /**
      * Called on logout or when token refresh fails.
      * Clears all auth state and localStorage.
      */
@@ -63,5 +72,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { setCredentials, setUser, clearCredentials } = authSlice.actions;
+export const { setCredentials, setUser, updateToken, clearCredentials } = authSlice.actions;
 export default authSlice.reducer;
