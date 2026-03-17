@@ -1,15 +1,16 @@
 import { useState, useEffect, useMemo } from "react";
 import {
   useGetMarketsQuery,
-  useGetCashPositionQuery,
-  useGetTodayRepaymentsQuery,
+  useGetDashboardSummaryQuery,
   useGetHistoricalQuery,
 } from "@/api/endpoints/dashboardApi";
-import { DashboardFilters, type TimeRange } from "../components/DashboardFilters";
+import { DashboardFilters } from "../components/DashboardFilters";
 import { KpiCards } from "../components/KpiCards";
 import { CashPositionCard } from "../components/CashPositionCard";
+import { PortfolioCard } from "../components/PortfolioCard";
+import { DailyCollectionsCard } from "../components/DailyCollectionsCard";
 import { TodayRepaymentsCard } from "../components/TodayRepaymentsCard";
-import { CollectionsChart } from "../components/CollectionsChart";
+import { CollectionsChart, type TimeRange } from "../components/CollectionsChart";
 
 // ── Date Helpers ───────────────────────────────────────────────────
 
@@ -20,25 +21,14 @@ function todayString(): string {
 function getDateRange(range: TimeRange): { from: string; to: string } {
   const to = new Date();
   const from = new Date();
-
   switch (range) {
-    case "day":
-      // Just today — same from/to
-      break;
-    case "week":
-      from.setDate(from.getDate() - 6);
-      break;
-    case "month":
-      from.setDate(from.getDate() - 29);
-      break;
-    case "year":
-      from.setFullYear(from.getFullYear() - 1);
-      break;
+    case "week":    from.setDate(from.getDate() - 6); break;
+    case "month":   from.setDate(from.getDate() - 29); break;
+    case "year":    from.setFullYear(from.getFullYear() - 1); break;
     case "custom":
-      // handled separately via customFrom/customTo state
-      break;
+    case "day":
+    default:        break;
   }
-
   return {
     from: from.toISOString().split("T")[0],
     to: to.toISOString().split("T")[0],
@@ -50,71 +40,94 @@ function getDateRange(range: TimeRange): { from: string; to: string } {
 export function OverviewPage() {
   const today = todayString();
 
-  // ── Filter State ─────────────────────────────────────────────────
+  // ── Filter state ──────────────────────────────────────────────
   const [selectedMarketId, setSelectedMarketId] = useState<number | null>(null);
   const [timeRange, setTimeRange] = useState<TimeRange>("week");
-
-  // Custom date range — only used when timeRange === "custom"
-  const [customFrom, setCustomFrom] = useState(
-    // default to 7 days ago
-    (() => {
-      const d = new Date();
-      d.setDate(d.getDate() - 7);
-      return d.toISOString().split("T")[0];
-    })(),
-  );
+  const [customFrom, setCustomFrom] = useState(() => {
+    const d = new Date(); d.setDate(d.getDate() - 7);
+    return d.toISOString().split("T")[0];
+  });
   const [customTo, setCustomTo] = useState(today);
 
-  // ── Fetch markets for the selector ───────────────────────────────
+  // ── Markets ───────────────────────────────────────────────────
   const { data: marketsRes, isLoading: marketsLoading } = useGetMarketsQuery();
   const markets = marketsRes?.data ?? [];
 
-  // Auto-select first market when data loads
   useEffect(() => {
     if (markets.length > 0 && selectedMarketId === null) {
       setSelectedMarketId(markets[0].id);
     }
   }, [markets, selectedMarketId]);
 
-  // ── Compute date range for historical query ───────────────────────
+  // ── Historical date range ─────────────────────────────────────
   const dateRange = useMemo(() => {
-    if (timeRange === "custom") {
-      return { from: customFrom, to: customTo };
-    }
+    if (timeRange === "custom") return { from: customFrom, to: customTo };
     return getDateRange(timeRange);
   }, [timeRange, customFrom, customTo]);
 
-  // ── Skip queries until we have a valid market_id ─────────────────
   const skip = selectedMarketId === null;
 
-  // ── Fetch dashboard data ─────────────────────────────────────────
-  const cashPosition = useGetCashPositionQuery(
-    { market_id: selectedMarketId!, date: today },
+  // ── API Calls (only 2) ────────────────────────────────────────
+  const summary = useGetDashboardSummaryQuery(
+    { market_id: selectedMarketId! },
     { skip },
   );
-
-  const todayRepayments = useGetTodayRepaymentsQuery(
-    { market_id: selectedMarketId!, date: today },
-    { skip },
-  );
-
   const historical = useGetHistoricalQuery(
-    {
-      market_id: selectedMarketId!,
-      from_date: dateRange.from,
-      to_date: dateRange.to,
-    },
+    { market_id: selectedMarketId!, from_date: dateRange.from, to_date: dateRange.to },
     { skip },
   );
 
-  // ── Render ───────────────────────────────────────────────────────
+  const d = summary.data?.data;
+
+  // ────────────────────────────────────────────────────────────────
+  // Layout: stacked columns on mobile, 2-col grid on lg+
+  // ────────────────────────────────────────────────────────────────
   return (
-    <div className="p-4 space-y-5">
-      {/* Filters */}
+    <div className="p-4 lg:p-6 space-y-5">
+      {/* Row 1 — Market selector (full width) */}
       <DashboardFilters
         markets={markets}
         selectedMarketId={selectedMarketId}
         onMarketChange={setSelectedMarketId}
+        isLoadingMarkets={marketsLoading}
+      />
+
+      {/* Row 2 — Active loans KPIs (full width, already 3-col internally) */}
+      <KpiCards data={d?.active_loans} isLoading={summary.isLoading} />
+
+      {/* Row 3 — Cash + Portfolio side-by-side on lg */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <CashPositionCard
+          data={d?.cash_position}
+          isLoading={summary.isLoading}
+          isError={summary.isError}
+        />
+        <PortfolioCard
+          data={d?.portfolio}
+          isLoading={summary.isLoading}
+          isError={summary.isError}
+        />
+      </div>
+
+      {/* Row 4 — Collections + Repayments side-by-side on lg */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <DailyCollectionsCard
+          data={d?.today?.collections}
+          isLoading={summary.isLoading}
+          isError={summary.isError}
+        />
+        <TodayRepaymentsCard
+          data={d?.today?.expected_repayments}
+          isLoading={summary.isLoading}
+          isError={summary.isError}
+        />
+      </div>
+
+      {/* Row 5 — Historical chart (full width, filter built-in) */}
+      <CollectionsChart
+        data={historical.data?.data}
+        isLoading={historical.isLoading}
+        isError={historical.isError}
         timeRange={timeRange}
         onTimeRangeChange={setTimeRange}
         customFrom={customFrom}
@@ -123,32 +136,6 @@ export function OverviewPage() {
           setCustomFrom(from);
           setCustomTo(to);
         }}
-        isLoadingMarkets={marketsLoading}
-      />
-
-      {/* KPI Cards (placeholder until /api/dashboard is fixed) */}
-      <KpiCards />
-
-      {/* Cash Position */}
-      <CashPositionCard
-        data={cashPosition.data?.data}
-        isLoading={cashPosition.isLoading}
-        isError={cashPosition.isError}
-      />
-
-      {/* Today Repayments */}
-      <TodayRepaymentsCard
-        data={todayRepayments.data?.data}
-        isLoading={todayRepayments.isLoading}
-        isError={todayRepayments.isError}
-      />
-
-      {/* Collections Analysis Chart — timeRange passed for aggregation logic */}
-      <CollectionsChart
-        data={historical.data?.data}
-        isLoading={historical.isLoading}
-        isError={historical.isError}
-        timeRange={timeRange}
       />
     </div>
   );

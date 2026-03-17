@@ -24,7 +24,7 @@ export function CashPositionCard({
   isError,
 }: CashPositionCardProps) {
   return (
-    <div className="rounded-2xl bg-gradient-to-br from-slate-800 to-slate-900 text-white p-5 shadow-lg relative overflow-hidden">
+    <div className="rounded-2xl bg-gradient-to-br from-slate-800 to-slate-900 text-white p-5 shadow-lg relative overflow-hidden h-full">
       {/* Background decoration */}
       <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/5" />
       <div className="absolute -right-2 -top-2 h-16 w-16 rounded-full bg-white/5" />

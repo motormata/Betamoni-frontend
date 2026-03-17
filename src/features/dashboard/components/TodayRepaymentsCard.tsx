@@ -50,7 +50,7 @@ export function TodayRepaymentsCard({
   }
 
   return (
-    <div className="rounded-xl border bg-card p-5 space-y-4">
+    <div className="rounded-xl border bg-card p-5 space-y-4 h-full">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">

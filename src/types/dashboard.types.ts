@@ -13,11 +13,22 @@ export interface DashboardQueryParams {
 export interface HistoricalQueryParams {
   market_id: number;
   from_date: string; // YYYY-MM-DD
-  to_date: string; // YYYY-MM-DD
+  to_date: string;   // YYYY-MM-DD
+}
+
+// ── Shared Sub-types ───────────────────────────────────────────────
+
+export interface LoanTypeAmount {
+  count: number;
+  total_amount: number;
+}
+
+export interface LoanTypePrincipal {
+  count: number;
+  total_principal: number;
 }
 
 // ── Cash Position ──────────────────────────────────────────────────
-// GET /api/dashboard/cash-position?market_id=&date=
 
 export interface CashPositionData {
   cash_in_hand: number;
@@ -26,26 +37,19 @@ export interface CashPositionData {
 }
 
 // ── Daily Collections ──────────────────────────────────────────────
-// GET /api/dashboard/daily-collections?market_id=&date=
-
-export interface LoanTypeBreakdown {
-  count: number;
-  total_amount: number;
-}
 
 export interface DailyCollectionsData {
   date: string;
   total_recovered: number;
   by_loan_type: {
-    daily: LoanTypeBreakdown;
-    weekly: LoanTypeBreakdown;
-    monthly: LoanTypeBreakdown;
+    daily: LoanTypeAmount;
+    weekly: LoanTypeAmount;
+    monthly: LoanTypeAmount;
   };
   payment_count: number;
 }
 
 // ── Today Repayments ───────────────────────────────────────────────
-// GET /api/dashboard/today-repayments?market_id=&date=
 
 export interface TodayRepaymentsData {
   date: string;
@@ -58,8 +62,48 @@ export interface TodayRepaymentsData {
   collection_rate: number;
 }
 
+// ── Active Loans ───────────────────────────────────────────────────
+
+export interface ActiveLoansData {
+  total_active_loans: number;
+  by_type: {
+    daily: LoanTypePrincipal;
+    weekly: LoanTypePrincipal;
+    monthly: LoanTypePrincipal;
+  };
+}
+
+// ── Portfolio ──────────────────────────────────────────────────────
+
+export interface PortfolioBreakdown {
+  total_expected: number;
+  total_received: number;
+  total_outstanding: number;
+  current_outstanding: number;
+  overdue_outstanding: number;
+}
+
+export interface PortfolioData {
+  total_exposure: number;
+  breakdown: PortfolioBreakdown;
+  loan_count: number;
+  recovery_rate: number;
+}
+
+// ── Dashboard Summary (super-endpoint) ────────────────────────────
+// GET /api/dashboard?market_id=
+
+export interface DashboardSummaryData {
+  cash_position: CashPositionData;
+  active_loans: ActiveLoansData;
+  today: {
+    collections: DailyCollectionsData;
+    expected_repayments: TodayRepaymentsData;
+  };
+  portfolio: PortfolioData;
+}
+
 // ── Historical ─────────────────────────────────────────────────────
-// GET /api/dashboard/historical?market_id=&from_date=&to_date=
 
 export interface HistoricalDayEntry {
   date: string;
@@ -81,29 +125,7 @@ export interface HistoricalData {
   daily_breakdown: HistoricalDayEntry[];
 }
 
-// ── Active Loans (placeholder — endpoint currently errors) ─────────
-// GET /api/dashboard/active-loans?market_id=
-
-export interface ActiveLoansData {
-  total_active: number;
-  total_amount: number;
-  by_type?: {
-    daily: number;
-    weekly: number;
-    monthly: number;
-  };
-}
-
-// ── Dashboard KPIs (placeholder — endpoint currently errors) ───────
-// GET /api/dashboard?market_id=
-
-export interface DashboardKpiData {
-  clusters: number;
-  borrowers: number;
-  active_loans: number;
-}
-
-// ── Market (from GET /api/markets) ─────────────────────────────────
+// ── Markets ────────────────────────────────────────────────────────
 
 export interface Market {
   id: number;
@@ -113,12 +135,12 @@ export interface Market {
   address?: string;
 }
 
-// ── Typed API responses ────────────────────────────────────────────
+// ── Typed API Response Wrappers ────────────────────────────────────
 
+export type DashboardSummaryResponse = ApiResponse<DashboardSummaryData>;
+export type ActiveLoansResponse = ApiResponse<ActiveLoansData>;
 export type CashPositionResponse = ApiResponse<CashPositionData>;
 export type DailyCollectionsResponse = ApiResponse<DailyCollectionsData>;
 export type TodayRepaymentsResponse = ApiResponse<TodayRepaymentsData>;
 export type HistoricalResponse = ApiResponse<HistoricalData>;
-export type ActiveLoansResponse = ApiResponse<ActiveLoansData>;
-export type DashboardKpiResponse = ApiResponse<DashboardKpiData>;
 export type MarketsResponse = ApiResponse<Market[]>;
