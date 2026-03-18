@@ -6,7 +6,7 @@
 **Type:** Internal admin application  
 **Purpose:** Mobile-first fintech admin interface for BetaMoni, a Nigerian nano-lending platform that provides quick, small loans to market women and traders.
 
-**Current Phase:** Dashboard Layout & Core Features (Authentication Phase Completed)  
+**Current Phase:** Dashboard & User Management Modules Completed  
 **Target Users:** Admins, Supervisors, and Superadmins representing the internal BetaMoni team.
 
 ---
@@ -143,7 +143,9 @@ betamoni-admin/
 │   │   └── index.css        # All design tokens & Tailwind imports
 │   │
 │   ├── types/               # TypeScript Definitions
-│   │   └── auth.types.ts    # Auth-related types
+│   │   ├── auth.types.ts    # Auth-related types
+│   │   ├── dashboard.types.ts # Dashboard-related types (Summary, Portfolio, etc.)
+│   │   └── staff.types.ts    # User management & role types
 │   │
 │   ├── App.tsx              # Root component
 │   └── main.tsx             # Application entry point
@@ -395,48 +397,47 @@ function useAuth() {
    - ProtectedRoute wrapper for auth
 
 6. **shadcn Components**
-   - Button, Input, Card, Label, Toast installed
+   - Button, Input, Card, Label, Toast, Skeletons
    - Consistent styling via design tokens
 
 7. **Backend Integration & Authentication**
    - Connected to live dev backend (`api.dev.betamoni.com.ng`)
-   - Completed end-to- natural login/logout flow
-   - Handled API response envelopes (`ApiResponse<T>`)
-   - Persistent login via `AuthProvider` layer
-   - Role-based access control established
+   - Completed full login/logout flow with JWT management
+   - Persistent login via `AuthProvider` and manual refetch validation
+   - Automatic token refresh logic for 401 interceptors
 
-8. **Version Control**
-   - Git initialized
-   - `.gitignore` configured to protect `.env` secrets
-   - Code pushed to `motormata/Betamoni-frontend` repo
+8. **Dashboard Overview**
+   - Consolidated API Layer: 2 queries (`getDashboardSummary` and `getHistorical`) replace 5+ individual calls.
+   - Redesigned responsive grid layout (2x2 on desktop, stacked on mobile).
+   - Component merging: `CashPosition` and `DailyCollections` consolidated into a high-density card.
+   - Smart chart aggregation (Day/Week/Month/Year/Custom) with built-in time range selector.
+   - Real-time KPI cards for Daily, Weekly, and Monthly loans.
+
+9. **Staff & User Management**
+   - UUID-based role fetching (`/api/admin/roles`) and market fetching.
+   - Dynamic user creation form with field-level Laravel validation error handling.
+   - Reusable `.input-field` utility class for consistent form styling.
+
+10. **Version Control**
+    - Git initialized and synced with `motormata/Betamoni-frontend`.
+    - Secure `.env` handling.
 
 ### 🚧 In Progress / Pending
 
-1. **Dashboard Layout**
-   - Sidebar navigation
-   - Header with user profile and quick actions
-   - Main content area
-   - Mobile responsive menu
-
-2. **Loading States**
+1. **Loading States**
    - Global loader for route transitions
-   - Page-level skeletons
-   - Component-level loading indicators
+   - Component-level loading skeletons for dashboard grids
 
-3. **Error Handling**
-   - Error boundary component
-   - Better error messages
-   - Retry logic for failed requests
-
+2. **Error Handling**
+   - Field-level validation parsing for forms
+   - Global error banners for API failures
 ### 📋 Planned Features
 
 - Loans management module
-- User management module
-- Transactions module
+- Clusters management module
+- Transactions/Ledger module
 - Reports/Analytics
-- Settings page
-- Profile management
-
+- Advanced settings & profile management
 ---
 
 ## Environment Configuration
@@ -820,5 +821,5 @@ Set production environment variables in hosting platform.
 ---
 
 **Last Updated:** March 2026  
-**Project Phase:** Dashboard Layout & Core Features  
-**Next Milestone:** Building the Sidebar, Header, and User Profile fetching
+**Project Phase:** Dashboard & User Management Complete  
+**Next Milestone:** Building the Loans and Clusters modules  

@@ -8,7 +8,6 @@ import { DashboardFilters } from "../components/DashboardFilters";
 import { KpiCards } from "../components/KpiCards";
 import { CashPositionCard } from "../components/CashPositionCard";
 import { PortfolioCard } from "../components/PortfolioCard";
-import { DailyCollectionsCard } from "../components/DailyCollectionsCard";
 import { TodayRepaymentsCard } from "../components/TodayRepaymentsCard";
 import { CollectionsChart, type TimeRange } from "../components/CollectionsChart";
 
@@ -40,7 +39,6 @@ function getDateRange(range: TimeRange): { from: string; to: string } {
 export function OverviewPage() {
   const today = todayString();
 
-  // ── Filter state ──────────────────────────────────────────────
   const [selectedMarketId, setSelectedMarketId] = useState<number | null>(null);
   const [timeRange, setTimeRange] = useState<TimeRange>("week");
   const [customFrom, setCustomFrom] = useState(() => {
@@ -49,7 +47,6 @@ export function OverviewPage() {
   });
   const [customTo, setCustomTo] = useState(today);
 
-  // ── Markets ───────────────────────────────────────────────────
   const { data: marketsRes, isLoading: marketsLoading } = useGetMarketsQuery();
   const markets = marketsRes?.data ?? [];
 
@@ -59,7 +56,6 @@ export function OverviewPage() {
     }
   }, [markets, selectedMarketId]);
 
-  // ── Historical date range ─────────────────────────────────────
   const dateRange = useMemo(() => {
     if (timeRange === "custom") return { from: customFrom, to: customTo };
     return getDateRange(timeRange);
@@ -67,7 +63,6 @@ export function OverviewPage() {
 
   const skip = selectedMarketId === null;
 
-  // ── API Calls (only 2) ────────────────────────────────────────
   const summary = useGetDashboardSummaryQuery(
     { market_id: selectedMarketId! },
     { skip },
@@ -80,11 +75,12 @@ export function OverviewPage() {
   const d = summary.data?.data;
 
   // ────────────────────────────────────────────────────────────────
-  // Layout: stacked columns on mobile, 2-col grid on lg+
+  // Mobile:  stacked column
+  // Desktop: 2×2 grid of 4 cards, then chart full-width
   // ────────────────────────────────────────────────────────────────
   return (
     <div className="p-4 lg:p-6 space-y-5">
-      {/* Row 1 — Market selector (full width) */}
+      {/* Market selector */}
       <DashboardFilters
         markets={markets}
         selectedMarketId={selectedMarketId}
@@ -92,30 +88,27 @@ export function OverviewPage() {
         isLoadingMarkets={marketsLoading}
       />
 
-      {/* Row 2 — Active loans KPIs (full width, already 3-col internally) */}
-      <KpiCards data={d?.active_loans} isLoading={summary.isLoading} />
-
-      {/* Row 3 — Cash + Portfolio side-by-side on lg */}
+      {/* 2×2 card grid on lg, stacked on mobile */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Card 1: Active Loans (2×2 internal grid) */}
+        <KpiCards data={d?.active_loans} isLoading={summary.isLoading} />
+
+        {/* Card 2: Cash on Hand + Cash Recovered (merged) */}
         <CashPositionCard
           data={d?.cash_position}
+          collectionsData={d?.today?.collections}
           isLoading={summary.isLoading}
           isError={summary.isError}
         />
+
+        {/* Card 3: Portfolio */}
         <PortfolioCard
           data={d?.portfolio}
           isLoading={summary.isLoading}
           isError={summary.isError}
         />
-      </div>
 
-      {/* Row 4 — Collections + Repayments side-by-side on lg */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <DailyCollectionsCard
-          data={d?.today?.collections}
-          isLoading={summary.isLoading}
-          isError={summary.isError}
-        />
+        {/* Card 4: Today's Repayments */}
         <TodayRepaymentsCard
           data={d?.today?.expected_repayments}
           isLoading={summary.isLoading}
@@ -123,7 +116,7 @@ export function OverviewPage() {
         />
       </div>
 
-      {/* Row 5 — Historical chart (full width, filter built-in) */}
+      {/* Historical chart (full width, filter built-in) */}
       <CollectionsChart
         data={historical.data?.data}
         isLoading={historical.isLoading}
