@@ -1,10 +1,21 @@
-import { UserPlus } from "lucide-react";
+import { UserPlus, Loader2 } from "lucide-react";
 import { StaffOverviewCard } from "../components/StaffOverviewCard";
 import { UserListTabs } from "../components/UserListTabs";
 import { CreateUserForm } from "../components/CreateUserForm";
-import { MOCK_STAFF_USERS } from "../data/mockUsers";
+import { useGetUsersQuery } from "@/api/endpoints/staffApi";
 
 export function StaffPage() {
+  const { data: usersRes, isLoading } = useGetUsersQuery();
+  const users = usersRes?.data ?? [];
+
+  if (isLoading) {
+    return (
+      <div className="p-4 lg:p-6 flex items-center justify-center h-[50vh]">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
     <div className="p-4 lg:p-6 space-y-6">
       {/* Header */}
@@ -19,8 +30,8 @@ export function StaffPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
         {/* Left Column: Overview + List */}
         <div className="space-y-6">
-          <StaffOverviewCard users={MOCK_STAFF_USERS} />
-          <UserListTabs users={MOCK_STAFF_USERS} />
+          <StaffOverviewCard users={users} />
+          <UserListTabs users={users} />
         </div>
 
         {/* Right Column: Create User Form */}

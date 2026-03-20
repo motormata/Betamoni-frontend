@@ -1,6 +1,7 @@
 import { baseApi } from "../baseApi";
 import type {
   RolesResponse,
+  UsersResponse,
   CreateUserPayload,
   CreateUserResponse,
   AssignMarketPayload,
@@ -11,6 +12,12 @@ import type {
 
 export const staffApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
+    // ── Get all users ────────────────────────────────────────────
+    getUsers: builder.query<UsersResponse, void>({
+      query: () => "/api/admin/users",
+      providesTags: ["User"],
+    }),
+
     // ── Get roles (for the role selector) ────────────────────────
     getRoles: builder.query<RolesResponse, void>({
       query: () => "/api/admin/roles",
@@ -40,6 +47,7 @@ export const staffApi = baseApi.injectEndpoints({
 });
 
 export const {
+  useGetUsersQuery,
   useGetRolesQuery,
   useCreateUserMutation,
   useAssignMarketMutation,

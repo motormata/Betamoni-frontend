@@ -32,7 +32,7 @@ export function MoveAgentModal({ agent, onClose }: MoveAgentModalProps) {
     try {
       await assignMarket({
         userId: agent.id,
-        market_id: Number(selectedMarketId),
+        market_id: selectedMarketId,
       }).unwrap();
 
       const newMarket = markets.find((m) => String(m.id) === selectedMarketId);
@@ -104,11 +104,6 @@ export function MoveAgentModal({ agent, onClose }: MoveAgentModalProps) {
               <p className="text-sm font-semibold truncate">{agent.name}</p>
               <p className="text-xs text-muted-foreground truncate">{agent.email}</p>
             </div>
-            {agent.agent_code && (
-              <span className="ml-auto text-[10px] font-mono bg-muted px-2 py-0.5 rounded shrink-0">
-                {agent.agent_code}
-              </span>
-            )}
           </div>
 
           {/* Current market (read-only) */}
@@ -118,7 +113,7 @@ export function MoveAgentModal({ agent, onClose }: MoveAgentModalProps) {
             </label>
             <input
               type="text"
-              value={agent.market ?? "Unassigned"}
+              value={agent.market?.name ?? "Unassigned"}
               readOnly
               className="input-field bg-muted/30 cursor-not-allowed opacity-70"
             />
@@ -140,7 +135,7 @@ export function MoveAgentModal({ agent, onClose }: MoveAgentModalProps) {
                 {marketsLoading ? "Loading markets..." : "Select a market"}
               </option>
               {markets
-                .filter((m) => m.id !== agent.market_id)
+                .filter((m) => String(m.id) !== agent.market_id)
                 .map((m) => (
                   <option key={m.id} value={String(m.id)}>
                     {m.name}

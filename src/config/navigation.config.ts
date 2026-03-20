@@ -2,7 +2,10 @@ import {
   LayoutDashboard,
   Banknote,
   Users,
+  Users2,
   UserCog,
+  CreditCard,
+  ShieldCheck,
   Settings,
   type LucideIcon,
 } from "lucide-react";
@@ -37,10 +40,28 @@ const allMenuItems: MenuItem[] = [
     allowedRoles: ["super-admin", "supervisor", "agent"],
   },
   {
+    icon: Users2,
+    label: "Borrowers",
+    path: "/borrowers",
+    allowedRoles: ["agent"],
+  },
+  {
+    icon: CreditCard,
+    label: "Payments",
+    path: "/payments",
+    allowedRoles: ["agent"],
+  },
+  {
+    icon: ShieldCheck,
+    label: "Agents",
+    path: "/agents",
+    allowedRoles: ["supervisor"],
+  },
+  {
     icon: Users,
     label: "Clusters",
     path: "/clusters",
-    allowedRoles: ["super-admin", "supervisor"],
+    allowedRoles: ["super-admin"],
   },
   {
     icon: UserCog,
@@ -76,6 +97,9 @@ export function getMenuItems(role?: UserRole | null): MenuItem[] {
 export const pageTitleMap: Record<string, string> = {
   "/dashboard": "Overview",
   "/loans": "Loans",
+  "/borrowers": "Borrowers",
+  "/payments": "Payments",
+  "/agents": "Agents",
   "/clusters": "Clusters",
   "/staff": "Staff",
   "/settings": "Settings",

@@ -2,11 +2,12 @@
 // Types for Regions and Markets management
 
 import type { ApiResponse } from "./auth.types";
+import type { UUID } from "./common.types";
 
 // ── Region ─────────────────────────────────────────────────────────
 
 export interface Region {
-  id: string;
+  id: UUID;
   name: string;
   code: string;
   description: string | null;
@@ -24,7 +25,7 @@ export interface CreateRegionPayload {
 // ── Market ─────────────────────────────────────────────────────────
 
 export interface MarketRegion {
-  id: string;
+  id: UUID;
   name: string;
   code: string;
   description: string | null;
@@ -35,10 +36,10 @@ export interface MarketRegion {
 }
 
 export interface ClusterMarket {
-  id: string;
+  id: UUID;
   name: string;
   code: string;
-  region_id: string;
+  region_id: UUID;
   address: string;
   created_at: string;
   updated_at: string;
@@ -46,7 +47,7 @@ export interface ClusterMarket {
 }
 
 export interface CreateMarketPayload {
-  region_id: string;
+  region_id: UUID;
   name: string;
   code: string;
   address: string;

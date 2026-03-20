@@ -513,6 +513,73 @@ export const ENV = {
 - No `any` unless absolutely necessary
 - Leverage type inference when obvious
 
+### ID Fields — Always Use `UUID`
+
+> **Rule:** Every entity `id`, foreign-key `*_id`, and URL path parameter that identifies a backend resource **must** be typed as `UUID`, never as plain `string` or `number`.
+
+The BetaMoni backend exclusively uses **UUID v7** strings for all primary and foreign keys. To make this explicit in the type system, a shared `UUID` alias is defined in `src/types/common.types.ts`:
+
+```ts
+// src/types/common.types.ts
+export type UUID = string;
+```
+
+Import and use it in every type file:
+
+```ts
+import type { UUID } from "@/types/common.types";
+
+export interface Borrower {
+  id: UUID;           // ✅ primary key
+  market_id: UUID;    // ✅ foreign key
+  // ...
+}
+
+export interface CreateBorrowerPayload {
+  market_id: UUID;    // ✅ body field sent to API
+  // ...
+}
+```
+
+**Affected ID fields by entity:**
+
+| Entity | ID fields typed as `UUID` |
+|---|---|
+| **User / Auth** | `User.id` |
+| **Staff** | `StaffUser.id`, `StaffUser.role_id`, `StaffUser.market_id`, `Role.id`, `CreatedUser.id`, `AssignMarketPayload.userId`, `AssignMarketPayload.market_id` |
+| **Borrower** | `Borrower.id`, `Borrower.market_id`, `CreateBorrowerPayload.market_id` |
+| **Agent Loan** | `AgentLoan.id`, `AgentLoan.borrower_id`, `CreateAgentLoanPayload.borrower_id` |
+| **Supervisor** | `RejectLoanPayload.id`, `DisburseLoanPayload.id` |
+| **Cluster / Region** | `Region.id`, `MarketRegion.id`, `ClusterMarket.id`, `ClusterMarket.region_id`, `CreateMarketPayload.region_id` |
+| **Dashboard** | `Market.id`, `Market.region_id`, `DashboardQueryParams.market_id`, `HistoricalQueryParams.market_id` |
+
+### Paginated List Responses — Use `PaginatedData<T>`
+
+List endpoints (e.g. `GET /api/agent/borrowers`) return a Laravel paginator envelope, **not** a flat array. Use the `PaginatedData<T>` generic from `agent.types.ts`:
+
+```ts
+// api response shape for a paginated list
+export interface PaginatedData<T> {
+  current_page: number;
+  data: T[];          // ← the actual items array
+  last_page: number;
+  total: number;
+  // ...
+}
+
+// Compose with ApiResponse:
+export type AgentBorrowersResponse = ApiResponse<PaginatedData<Borrower>>;
+```
+
+When consuming in a component, always drill to `.data.data` for the array:
+
+```ts
+const { data: res } = useGetAgentBorrowersQuery();
+const borrowers = res?.data?.data ?? [];  // ✅
+// NOT: res?.data ?? []                   // ❌ — that's the pagination object
+```
+
+
 ### Styling Guidelines
 
 - Use Tailwind utility classes

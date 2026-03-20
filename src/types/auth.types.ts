@@ -1,10 +1,11 @@
 // ── User & Role Types ──────────────────────────────────────────────
+import type { UUID } from "./common.types";
 
 // Backend uses hyphenated role names
 export type UserRole = "super-admin" | "supervisor" | "agent";
 
 export interface User {
-  id: string;
+  id: UUID;
   email: string;
   name: string;
   phone: string | null;

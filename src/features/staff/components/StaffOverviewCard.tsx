@@ -8,9 +8,9 @@ interface StaffOverviewCardProps {
 }
 
 export function StaffOverviewCard({ users }: StaffOverviewCardProps) {
-  const superAdminCount = users.filter((u) => u.role === "super-admin").length;
-  const supervisorCount = users.filter((u) => u.role === "supervisor").length;
-  const agentCount = users.filter((u) => u.role === "agent").length;
+  const superAdminCount = users.filter((u) => u.role.slug === "super-admin").length;
+  const supervisorCount = users.filter((u) => u.role.slug === "supervisor").length;
+  const agentCount = users.filter((u) => u.role.slug === "agent").length;
 
   const stats = [
     {

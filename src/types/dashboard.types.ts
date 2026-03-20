@@ -2,16 +2,17 @@
 // Derived from actual backend payloads
 
 import type { ApiResponse } from "./auth.types";
+import type { UUID } from "./common.types";
 
 // ── Query Params ───────────────────────────────────────────────────
 
 export interface DashboardQueryParams {
-  market_id: number;
+  market_id: UUID;
   date?: string; // YYYY-MM-DD
 }
 
 export interface HistoricalQueryParams {
-  market_id: number;
+  market_id: UUID;
   from_date: string; // YYYY-MM-DD
   to_date: string;   // YYYY-MM-DD
 }
@@ -128,10 +129,10 @@ export interface HistoricalData {
 // ── Markets ────────────────────────────────────────────────────────
 
 export interface Market {
-  id: number;
+  id: UUID;
   name: string;
   code: string;
-  region_id: number;
+  region_id: UUID;
   address?: string;
 }
 

@@ -24,7 +24,7 @@ export function UserListTabs({ users }: UserListTabsProps) {
   const [actionMenuId, setActionMenuId] = useState<string | null>(null);
   const [moveAgent, setMoveAgent] = useState<StaffUser | null>(null);
 
-  const filtered = users.filter((u) => u.role === activeRole);
+  const filtered = users.filter((u) => u.role.slug === activeRole);
 
   return (
     <div className="rounded-xl border bg-card overflow-hidden">
@@ -102,19 +102,19 @@ function UserRow({ user, isMenuOpen, onMenuToggle, onMoveAgent }: UserRowProps) 
     .join("")
     .toUpperCase();
 
-  const roleColors: Record<StaffUser["role"], string> = {
+  const roleColors: Record<StaffRole, string> = {
     "super-admin": "bg-violet-500/20 text-violet-600",
     supervisor: "bg-sky-500/20 text-sky-600",
     agent: "bg-emerald-500/20 text-emerald-600",
   };
 
-  const hasActions = user.role === "agent";
+  const hasActions = user.role.slug === "agent";
 
   return (
     <div className="flex items-center gap-3 px-4 py-3 relative">
       {/* Avatar */}
       <div
-        className={`h-9 w-9 rounded-full ${roleColors[user.role]} flex items-center justify-center shrink-0 text-sm font-bold`}
+        className={`h-9 w-9 rounded-full ${roleColors[user.role.slug as StaffRole] || "bg-muted text-muted-foreground"} flex items-center justify-center shrink-0 text-sm font-bold`}
       >
         {initials}
       </div>
@@ -131,14 +131,10 @@ function UserRow({ user, isMenuOpen, onMenuToggle, onMoveAgent }: UserRowProps) 
         </div>
         <p className="text-xs text-muted-foreground truncate">{user.email}</p>
         <p className="text-[11px] text-muted-foreground mt-0.5">
-          {user.market ?? (
+          {user.market?.name ?? (
             <span className="text-amber-500 font-medium">Unassigned</span>
           )}
-          {user.agent_code && (
-            <span className="ml-2 font-mono text-[10px] bg-muted px-1.5 py-0.5 rounded">
-              {user.agent_code}
-            </span>
-          )}
+          {/* We might add an agent_code property in the future if backend supports it */}
         </p>
       </div>
 
