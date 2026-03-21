@@ -4,8 +4,8 @@ import type { Market } from "@/types/dashboard.types";
 
 interface DashboardFiltersProps {
   markets: Market[];
-  selectedMarketId: number | null;
-  onMarketChange: (marketId: number) => void;
+  selectedMarketId: string | null;
+  onMarketChange: (marketId: string) => void;
   isLoadingMarkets?: boolean;
 }
 
@@ -21,7 +21,7 @@ export function DashboardFilters({
     <div className="flex items-center justify-between gap-3">
       <select
         value={selectedMarketId ?? ""}
-        onChange={(e) => onMarketChange(Number(e.target.value))}
+        onChange={(e) => onMarketChange(e.target.value)}
         disabled={isLoadingMarkets}
         className="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50 min-w-[160px] max-w-[260px]"
       >

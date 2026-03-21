@@ -44,42 +44,46 @@ export function AgentBorrowerDetailPage() {
           </div>
 
           {/* Details Grid */}
-          <div className="grid grid-cols-2 gap-3">
-            <InfoCard icon={Phone} label="Phone" value={borrower.phone} />
-            <InfoCard icon={User2} label="Gender" value={borrower.gender} capitalize />
-            <InfoCard icon={MapPin} label="Address" value={borrower.home_address} fullWidth />
-            {borrower.market && typeof borrower.market === "object" && (
-              <InfoCard
-                icon={Building2}
-                label="Market"
-                value={(borrower.market as { name: string }).name}
-              />
-            )}
-            {borrower.created_at && (
-              <InfoCard
-                icon={Calendar}
-                label="Registered"
-                value={new Date(borrower.created_at).toLocaleDateString("en-NG", {
-                  year: "numeric", month: "short", day: "numeric",
-                })}
-              />
-            )}
-          </div>
+          {(() => {
+            const market = typeof borrower.market === "object" && borrower.market !== null
+              ? (borrower.market as { name: string })
+              : null;
+            const createdAt = typeof borrower.created_at === "string" ? borrower.created_at : null;
+            return (
+              <div className="grid grid-cols-2 gap-3">
+                <InfoCard icon={Phone} label="Phone" value={borrower.phone} />
+                <InfoCard icon={User2} label="Gender" value={borrower.gender} capitalize />
+                <InfoCard icon={MapPin} label="Address" value={borrower.home_address} fullWidth />
+                {market && (
+                  <InfoCard icon={Building2} label="Market" value={market.name} />
+                )}
+                {createdAt && (
+                  <InfoCard
+                    icon={Calendar}
+                    label="Registered"
+                    value={new Date(createdAt).toLocaleDateString("en-NG", {
+                      year: "numeric", month: "short", day: "numeric",
+                    })}
+                  />
+                )}
+              </div>
+            );
+          })()}
 
           {/* Registered By */}
-          {borrower.registered_by && typeof borrower.registered_by === "object" && (
-            <div className="rounded-xl border bg-card p-4">
-              <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-2">
-                Registered By
-              </p>
-              <p className="text-sm font-semibold">
-                {(borrower.registered_by as { name: string }).name}
-              </p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {(borrower.registered_by as { email: string }).email}
-              </p>
-            </div>
-          )}
+          {(() => {
+            if (typeof borrower.registered_by !== "object" || borrower.registered_by === null) return null;
+            const reg = borrower.registered_by as { name: string; email: string };
+            return (
+              <div className="rounded-xl border bg-card p-4">
+                <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-2">
+                  Registered By
+                </p>
+                <p className="text-sm font-semibold">{reg.name}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{reg.email}</p>
+              </div>
+            );
+          })()}
 
           {/* Raw JSON */}
           <details className="rounded-xl border bg-card">

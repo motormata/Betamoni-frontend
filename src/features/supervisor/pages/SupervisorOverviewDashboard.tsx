@@ -1,5 +1,5 @@
 import { LayoutDashboard, Banknote, Users2, TrendingUp, Clock, AlertTriangle, CheckCircle2, CreditCard } from "lucide-react";
-import { useGetSupervisorLoansSummaryQuery } from "@/api/endpoints/supervisorApi";
+import { useGetSupervisorLoansSummaryQuery, useGetSupervisorAgentsQuery } from "@/api/endpoints/supervisorApi";
 import { AgentPageHeader } from "@/features/agent/components/AgentPageHeader";
 import { LoadingState, ErrorState } from "@/features/agent/components/FeedbackStates";
 
@@ -8,6 +8,10 @@ import { LoadingState, ErrorState } from "@/features/agent/components/FeedbackSt
 export function SupervisorOverviewDashboard() {
   const { data: res, isLoading, isError } = useGetSupervisorLoansSummaryQuery();
   const summary = res?.data;
+
+  // Use the actual agents endpoint to get the true total count
+  const { data: agentsRes } = useGetSupervisorAgentsQuery();
+  const totalAgents = agentsRes?.data?.length;
 
   return (
     <div className="p-4 lg:p-6 space-y-5">
@@ -60,7 +64,7 @@ export function SupervisorOverviewDashboard() {
           <SummaryCard
             icon={Users2}
             label="Agents"
-            value={val(summary.total_agents ?? summary.agents)}
+            value={totalAgents ?? val(summary.total_agents ?? summary.agents)}
             color="text-violet-600"
             bgColor="bg-violet-500/10"
           />
@@ -78,6 +82,17 @@ export function SupervisorOverviewDashboard() {
             value={formatCurrency(summary.total_collected ?? summary.total_repaid)}
             color="text-emerald-600"
             bgColor="bg-emerald-500/10"
+            fullWidth
+          />
+          <SummaryCard
+            icon={CreditCard}
+            label="Total Outstanding"
+            value={formatCurrency(
+              (Number(summary.total_disbursed ?? summary.total_principal) || 0) -
+              (Number(summary.total_collected ?? summary.total_repaid) || 0)
+            )}
+            color="text-orange-500"
+            bgColor="bg-orange-500/10"
             fullWidth
           />
         </div>

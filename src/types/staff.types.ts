@@ -42,6 +42,7 @@ export interface StaffUser {
     created_at: string;
     updated_at: string;
   };
+  agent_code: string | null;
   market: {
     id: UUID;
     name: string;

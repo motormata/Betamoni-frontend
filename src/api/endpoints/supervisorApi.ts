@@ -8,6 +8,7 @@ import type {
   SupervisorLoansListResponse,
   SupervisorLoanDetailResponse,
 } from "@/types/supervisor.types";
+import type { UsersResponse } from "@/types/staff.types";
 
 // ── Supervisor API Endpoints ───────────────────────────────────────
 
@@ -23,6 +24,12 @@ export const supervisorApi = baseApi.injectEndpoints({
     getSupervisorLoans: builder.query<SupervisorLoansListResponse, number | void>({
       query: (page = 1) => `/api/supervisor/loans?page=${page}`,
       providesTags: ["SupervisorLoans"],
+    }),
+
+    // ── GET /api/supervisor/agents ────────────────────────────
+    getSupervisorAgents: builder.query<UsersResponse, number | void>({
+      query: (page = 1) => `/api/supervisor/agents?page=${page}`,
+      providesTags: ["SupervisorLoans"], // Keeping same tag family for simplicity
     }),
 
     // ── GET /api/supervisor/loans/{id} ────────────────────────
@@ -67,6 +74,7 @@ export const {
   useLazyGetSupervisorLoansSummaryQuery,
   useGetSupervisorLoansQuery,
   useGetSupervisorLoanByIdQuery,
+  useGetSupervisorAgentsQuery,
   useApproveLoanMutation,
   useRejectLoanMutation,
   useDisburseLoanMutation,

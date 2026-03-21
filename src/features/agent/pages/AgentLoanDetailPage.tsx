@@ -51,24 +51,24 @@ export function AgentLoanDetailPage() {
           <div className="grid grid-cols-2 gap-3">
             <DetailCard icon={Percent} label="Interest Rate" value={`${loan.interest_rate}%`} />
             <DetailCard icon={Calendar} label="Duration" value={`${loan.duration_days} days`} />
-            <DetailCard icon={Clock} label="Frequency" value={loan.repayment_frequency} />
-            <DetailCard icon={User2} label="Borrower ID" value={loan.borrower_id} mono />
-            {loan.collection_day && (
+            <DetailCard icon={Clock} label="Frequency" value={String(loan.repayment_frequency)} />
+            <DetailCard icon={User2} label="Borrower ID" value={String(loan.borrower_id)} mono />
+            {loan.collection_day != null && (
               <DetailCard icon={Calendar} label="Collection Day" value={String(loan.collection_day)} />
             )}
-            {loan.collection_time && (
+            {loan.collection_time != null && (
               <DetailCard icon={Clock} label="Collection Time" value={String(loan.collection_time)} />
             )}
-            {loan.purpose && (
+            {loan.purpose != null && (
               <DetailCard icon={Banknote} label="Purpose" value={String(loan.purpose)} fullWidth />
             )}
           </div>
 
           {/* Timestamps */}
-          {loan.created_at && (
+          {loan.created_at != null && (
             <div className="rounded-xl border bg-card p-4">
               <p className="text-xs text-muted-foreground">
-                Created: {new Date(loan.created_at).toLocaleDateString("en-NG", {
+                Created: {new Date(String(loan.created_at)).toLocaleDateString("en-NG", {
                   year: "numeric", month: "long", day: "numeric",
                 })}
               </p>

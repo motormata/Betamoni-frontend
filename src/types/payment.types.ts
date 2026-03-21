@@ -19,6 +19,7 @@ export interface PaymentQueryParams {
   loan_id?: UUID;
   from_date?: string; // YYYY-MM-DD
   to_date?: string;   // YYYY-MM-DD
+  page?: number;
 }
 
 // ── Response Data Types ────────────────────────────────────────────
@@ -32,7 +33,14 @@ export interface Payment {
   repayment_schedule_id: UUID | null;
   created_at: string;
   updated_at: string;
-  [key: string]: unknown;
+  loan?: {
+    id: UUID;
+    loan_number: string;
+    borrower?: {
+      id: UUID;
+      full_name: string;
+    };
+  };
 }
 
 // ── Composed API Response Types ────────────────────────────────────

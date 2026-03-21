@@ -27,6 +27,7 @@ export const paymentApi = baseApi.injectEndpoints({
         if (params.loan_id) searchParams.set("loan_id", params.loan_id);
         if (params.from_date) searchParams.set("from_date", params.from_date);
         if (params.to_date) searchParams.set("to_date", params.to_date);
+        if (params.page) searchParams.set("page", String(params.page));
         const qs = searchParams.toString();
         return `/api/payments${qs ? `?${qs}` : ""}`;
       },

@@ -35,7 +35,7 @@ export function AgentBorrowersPage() {
             className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors"
           >
             <Plus className="h-3.5 w-3.5" />
-            Add Borrower
+             Borrower
           </button>
         }
       />
@@ -54,7 +54,8 @@ export function AgentBorrowersPage() {
         )}
 
         {borrowers.length > 0 && (
-          <ul className="divide-y divide-border">
+          <div className="max-h-[60vh] overflow-y-auto custom-scrollbar">
+            <ul className="divide-y divide-border">
             {borrowers.map((b) => (
               <li
                 key={b.id}
@@ -75,7 +76,8 @@ export function AgentBorrowersPage() {
                 <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
               </li>
             ))}
-          </ul>
+            </ul>
+          </div>
         )}
 
         {pagination && (
@@ -83,6 +85,9 @@ export function AgentBorrowersPage() {
             <Pagination
               currentPage={pagination.current_page}
               lastPage={pagination.last_page}
+              totalItems={pagination.total}
+              fromItem={pagination.from}
+              toItem={pagination.to}
               onPageChange={setPage}
             />
           </div>

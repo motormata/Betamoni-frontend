@@ -73,7 +73,7 @@ const allMenuItems: MenuItem[] = [
     icon: Settings,
     label: "Settings",
     path: "/settings",
-    allowedRoles: ["super-admin", "supervisor", "agent"],
+    allowedRoles: ["super-admin"],
   },
 ];
 

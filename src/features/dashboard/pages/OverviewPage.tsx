@@ -39,7 +39,7 @@ function getDateRange(range: TimeRange): { from: string; to: string } {
 export function OverviewPage() {
   const today = todayString();
 
-  const [selectedMarketId, setSelectedMarketId] = useState<number | null>(null);
+  const [selectedMarketId, setSelectedMarketId] = useState<string | null>(null);
   const [timeRange, setTimeRange] = useState<TimeRange>("week");
   const [customFrom, setCustomFrom] = useState(() => {
     const d = new Date(); d.setDate(d.getDate() - 7);

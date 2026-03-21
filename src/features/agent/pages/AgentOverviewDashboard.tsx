@@ -1,5 +1,5 @@
 import { LayoutDashboard, Banknote, Users2, CreditCard, TrendingUp, Clock, AlertTriangle, CheckCircle2 } from "lucide-react";
-import { useGetAgentLoansSummaryQuery } from "@/api/endpoints/agentApi";
+import { useGetAgentLoansSummaryQuery, useGetAgentBorrowersQuery } from "@/api/endpoints/agentApi";
 import { AgentPageHeader } from "../components/AgentPageHeader";
 import { LoadingState, ErrorState } from "../components/FeedbackStates";
 
@@ -8,6 +8,10 @@ import { LoadingState, ErrorState } from "../components/FeedbackStates";
 export function AgentOverviewDashboard() {
   const { data: res, isLoading, isError } = useGetAgentLoansSummaryQuery();
   const summary = res?.data;
+
+  // Use the actual borrowers endpoint to get the true total count
+  const { data: borrowersRes } = useGetAgentBorrowersQuery();
+  const totalBorrowers = borrowersRes?.data?.total;
 
   return (
     <div className="p-4 lg:p-6 space-y-5">
@@ -60,7 +64,7 @@ export function AgentOverviewDashboard() {
           <SummaryCard
             icon={Users2}
             label="Borrowers"
-            value={val(summary.total_borrowers ?? summary.borrowers)}
+            value={totalBorrowers ?? val(summary.total_borrowers ?? summary.borrowers)}
             color="text-violet-600"
             bgColor="bg-violet-500/10"
           />
@@ -78,6 +82,17 @@ export function AgentOverviewDashboard() {
             value={formatCurrency(summary.total_collected ?? summary.total_repaid)}
             color="text-emerald-600"
             bgColor="bg-emerald-500/10"
+            fullWidth
+          />
+          <SummaryCard
+            icon={CreditCard}
+            label="Total Outstanding"
+            value={formatCurrency(
+              (Number(summary.total_disbursed ?? summary.total_principal) || 0) -
+              (Number(summary.total_collected ?? summary.total_repaid) || 0)
+            )}
+            color="text-orange-500"
+            bgColor="bg-orange-500/10"
             fullWidth
           />
         </div>

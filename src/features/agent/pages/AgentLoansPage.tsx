@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Banknote, Plus, ChevronRight } from "lucide-react";
+import { Banknote, Plus, ChevronRight, Copy, Check } from "lucide-react";
 import {
   useGetAgentLoansQuery,
   useGetAgentBorrowersQuery,
   useCreateAgentLoanMutation,
 } from "@/api/endpoints/agentApi";
-import { useGetClusterMarketsQuery } from "@/api/endpoints/clustersApi";
-import type { RepaymentFrequency, Guarantor } from "@/types/agent.types";
+
+import type { RepaymentFrequency } from "@/types/agent.types";
 import { AgentPageHeader } from "../components/AgentPageHeader";
 import { StatusBadge } from "../components/StatusBadge";
 import { Pagination } from "../components/Pagination";
@@ -37,7 +37,7 @@ export function AgentLoansPage() {
             className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors"
           >
             <Plus className="h-3.5 w-3.5" />
-            New Loan
+             Loan
           </button>
         }
       />
@@ -56,7 +56,8 @@ export function AgentLoansPage() {
         )}
 
         {loans.length > 0 && (
-          <ul className="divide-y divide-border">
+          <div className="max-h-[60vh] overflow-y-auto custom-scrollbar">
+            <ul className="divide-y divide-border">
             {loans.map((loan) => (
               <li
                 key={loan.id}
@@ -69,6 +70,7 @@ export function AgentLoansPage() {
                       ₦{Number(loan.principal_amount).toLocaleString()}
                     </p>
                     <StatusBadge status={loan.status} />
+                    <CopyButton text={loan.id} />
                   </div>
                   <p className="text-xs text-muted-foreground mt-0.5">
                     {loan.repayment_frequency} · {loan.duration_days} days · {loan.interest_rate}%
@@ -77,7 +79,8 @@ export function AgentLoansPage() {
                 <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
               </li>
             ))}
-          </ul>
+            </ul>
+          </div>
         )}
 
         {pagination && (
@@ -85,6 +88,9 @@ export function AgentLoansPage() {
             <Pagination
               currentPage={pagination.current_page}
               lastPage={pagination.last_page}
+              totalItems={pagination.total}
+              fromItem={pagination.from}
+              toItem={pagination.to}
               onPageChange={setPage}
             />
           </div>
@@ -268,5 +274,27 @@ function CreateLoanForm({ onSuccess }: { onSuccess: () => void }) {
         {isLoading ? "Creating…" : "Create Loan"}
       </button>
     </form>
+  );
+}
+
+// ── Copy Button ──────────────────────────────────────────────────
+
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+  return (
+    <button
+      type="button"
+      onClick={handleCopy}
+      className="p-1 rounded-md hover:bg-muted text-muted-foreground transition-colors"
+      title="Copy Loan ID"
+    >
+      {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
+    </button>
   );
 }
