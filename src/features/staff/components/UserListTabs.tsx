@@ -51,27 +51,29 @@ export function UserListTabs({ users }: UserListTabsProps) {
       </div>
 
       {/* User list */}
-      <div className="divide-y">
-        {filtered.length === 0 ? (
-          <div className="p-8 text-center text-sm text-muted-foreground">
-            No {TABS.find((t) => t.role === activeRole)?.label.toLowerCase()} found.
-          </div>
-        ) : (
-          filtered.map((user) => (
-            <UserRow
-              key={user.id}
-              user={user}
-              isMenuOpen={actionMenuId === user.id}
-              onMenuToggle={() =>
-                setActionMenuId((prev) => (prev === user.id ? null : user.id))
-              }
-              onMoveAgent={() => {
-                setMoveAgent(user);
-                setActionMenuId(null);
-              }}
-            />
-          ))
-        )}
+      <div className="max-h-[60vh] overflow-y-auto custom-scrollbar">
+        <div className="divide-y">
+          {filtered.length === 0 ? (
+            <div className="p-8 text-center text-sm text-muted-foreground">
+              No {TABS.find((t) => t.role === activeRole)?.label.toLowerCase()} found.
+            </div>
+          ) : (
+            filtered.map((user) => (
+              <UserRow
+                key={user.id}
+                user={user}
+                isMenuOpen={actionMenuId === user.id}
+                onMenuToggle={() =>
+                  setActionMenuId((prev) => (prev === user.id ? null : user.id))
+                }
+                onMoveAgent={() => {
+                  setMoveAgent(user);
+                  setActionMenuId(null);
+                }}
+              />
+            ))
+          )}
+        </div>
       </div>
 
       {/* Move Agent Modal */}

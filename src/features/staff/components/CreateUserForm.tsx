@@ -5,7 +5,7 @@ import { UserPlus, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 
 // ── Component ──────────────────────────────────────────────────────
 
-export function CreateUserForm() {
+export function CreateUserForm({ onSuccess }: { onSuccess?: () => void }) {
   const { data: rolesRes, isLoading: rolesLoading } = useGetRolesQuery();
   const { data: marketsRes, isLoading: marketsLoading } = useGetMarketsQuery();
   const [createUser, { isLoading: isCreating }] = useCreateUserMutation();
@@ -55,6 +55,7 @@ export function CreateUserForm() {
       setPassword("");
       setRoleId("");
       setMarketId("");
+      onSuccess?.();
     } catch (err: any) {
       const errorData = err?.data;
       // Handle validation errors from Laravel
@@ -71,7 +72,9 @@ export function CreateUserForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
+    <form onSubmit={handleSubmit} className="rounded-xl border bg-card p-4 space-y-5 animate-in slide-in-from-top-2 duration-200">
+      <p className="text-sm font-semibold">Create New User</p>
+
       {/* Result Banner */}
       {result && (
         <div

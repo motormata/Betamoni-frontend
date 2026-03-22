@@ -35,9 +35,15 @@ const allMenuItems: MenuItem[] = [
   },
   {
     icon: Banknote,
+    label: "Finance",
+    path: "/loans",
+    allowedRoles: ["super-admin"],
+  },
+  {
+    icon: Banknote,
     label: "Loans",
     path: "/loans",
-    allowedRoles: ["super-admin", "supervisor", "agent"],
+    allowedRoles: ["supervisor", "agent"],
   },
   {
     icon: Users2,
@@ -96,7 +102,7 @@ export function getMenuItems(role?: UserRole | null): MenuItem[] {
  */
 export const pageTitleMap: Record<string, string> = {
   "/dashboard": "Overview",
-  "/loans": "Loans",
+  "/loans": "Finance",
   "/borrowers": "Borrowers",
   "/payments": "Payments",
   "/agents": "Agents",
