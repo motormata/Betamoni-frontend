@@ -3,11 +3,12 @@ import type { CashPositionData, DailyCollectionsData } from "@/types/dashboard.t
 
 // ── Helpers ────────────────────────────────────────────────────────
 
-function formatCurrency(amount: number, currency: string = "NGN"): string {
+function formatCurrency(amount: number | string, currency: string = "NGN"): string {
+  const num = Number(amount);
   if (currency === "NGN") {
-    return `₦${amount.toLocaleString("en-NG")}`;
+    return `₦${num.toLocaleString("en-NG")}`;
   }
-  return amount.toLocaleString("en-US", { style: "currency", currency });
+  return num.toLocaleString("en-US", { style: "currency", currency });
 }
 
 // ── Component ──────────────────────────────────────────────────────

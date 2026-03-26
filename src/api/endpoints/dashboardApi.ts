@@ -24,10 +24,11 @@ export const dashboardApi = baseApi.injectEndpoints({
     // ── Dashboard Summary (super-endpoint) ──────────────────────
     // Returns: cash_position, active_loans, today.collections,
     //          today.expected_repayments, portfolio — all in one call.
+    // market_id is optional; omit for platform-wide data.
     getDashboardSummary: builder.query<DashboardSummaryResponse, Pick<DashboardQueryParams, "market_id">>({
       query: ({ market_id }) => ({
         url: "/api/dashboard",
-        params: { market_id },
+        params: market_id ? { market_id } : undefined,
       }),
     }),
 
@@ -35,15 +36,16 @@ export const dashboardApi = baseApi.injectEndpoints({
     getActiveLoans: builder.query<ActiveLoansResponse, Pick<DashboardQueryParams, "market_id">>({
       query: ({ market_id }) => ({
         url: "/api/dashboard/active-loans",
-        params: { market_id },
+        params: market_id ? { market_id } : undefined,
       }),
     }),
 
     // ── Historical (chart data) ─────────────────────────────────
+    // market_id is optional; omit for platform-wide data.
     getHistorical: builder.query<HistoricalResponse, HistoricalQueryParams>({
       query: ({ market_id, from_date, to_date }) => ({
         url: "/api/dashboard/historical",
-        params: { market_id, from_date, to_date },
+        params: { ...(market_id ? { market_id } : {}), from_date, to_date },
       }),
     }),
 

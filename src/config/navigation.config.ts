@@ -6,7 +6,6 @@ import {
   UserCog,
   CreditCard,
   ShieldCheck,
-  Settings,
   type LucideIcon,
 } from "lucide-react";
 import type { UserRole } from "@/types/auth.types";
@@ -73,12 +72,6 @@ const allMenuItems: MenuItem[] = [
     icon: UserCog,
     label: "Staff",
     path: "/staff",
-    allowedRoles: ["super-admin"],
-  },
-  {
-    icon: Settings,
-    label: "Settings",
-    path: "/settings",
     allowedRoles: ["super-admin"],
   },
 ];

@@ -7,12 +7,12 @@ import type { UUID } from "./common.types";
 // ── Query Params ───────────────────────────────────────────────────
 
 export interface DashboardQueryParams {
-  market_id: UUID;
-  date?: string; // YYYY-MM-DD
+  market_id?: UUID;  // optional — omit to get platform-wide data
+  date?: string;     // YYYY-MM-DD
 }
 
 export interface HistoricalQueryParams {
-  market_id: UUID;
+  market_id?: UUID;  // optional — omit to get platform-wide data
   from_date: string; // YYYY-MM-DD
   to_date: string;   // YYYY-MM-DD
 }
@@ -106,10 +106,19 @@ export interface DashboardSummaryData {
 
 // ── Historical ─────────────────────────────────────────────────────
 
+export interface HistoricalMarketEntry {
+  market_id: UUID;
+  market_name: string;
+  collections: number | string;
+  expected: number;
+  collection_rate: number;
+}
+
 export interface HistoricalDayEntry {
   date: string;
-  collections: DailyCollectionsData;
-  repayments: TodayRepaymentsData;
+  total_collections: number;
+  total_expected: number;
+  markets: HistoricalMarketEntry[];
 }
 
 export interface HistoricalData {

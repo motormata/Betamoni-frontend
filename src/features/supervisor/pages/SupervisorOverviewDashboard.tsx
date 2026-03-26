@@ -1,5 +1,5 @@
 import { LayoutDashboard, Banknote, Users2, TrendingUp, Clock, AlertTriangle, CheckCircle2, CreditCard } from "lucide-react";
-import { useGetSupervisorLoansSummaryQuery, useGetSupervisorAgentsQuery } from "@/api/endpoints/supervisorApi";
+import { useGetSupervisorLoansSummaryQuery, useGetAgentsPerformanceQuery } from "@/api/endpoints/supervisorApi";
 import { AgentPageHeader } from "@/features/agent/components/AgentPageHeader";
 import { LoadingState, ErrorState } from "@/features/agent/components/FeedbackStates";
 
@@ -9,8 +9,8 @@ export function SupervisorOverviewDashboard() {
   const { data: res, isLoading, isError } = useGetSupervisorLoansSummaryQuery();
   const summary = res?.data;
 
-  // Use the actual agents endpoint to get the true total count
-  const { data: agentsRes } = useGetSupervisorAgentsQuery();
+  // Use the agents-performance endpoint to get the true total count
+  const { data: agentsRes } = useGetAgentsPerformanceQuery();
   const totalAgents = agentsRes?.data?.length;
 
   return (

@@ -125,7 +125,7 @@ function RecordPaymentForm({ onSuccess }: { onSuccess: () => void }) {
           >
             <option value="">Select</option>
             <option value="cash">Cash</option>
-            <option value="transfer">Transfer</option>
+            <option value="bank_transfer">Transfer</option>
             <option value="pos">POS</option>
           </select>
         </div>

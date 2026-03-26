@@ -1,6 +1,37 @@
 import type { ApiResponse } from "@/types/auth.types";
 import type { UUID, PaginatedData } from "@/types/common.types";
 
+// ── Agent Performance Types ────────────────────────────────────────
+
+export interface AgentDailyPerformance {
+  collected_amount: number;
+  collected_count: number;
+  expected_amount: number;
+  expected_count: number;
+  performance_rate: number;
+}
+
+export interface AgentPortfolioSummary {
+  total_overdue_amount: number;
+  total_overdue_count: number;
+  active_loans_count: number;
+}
+
+export interface AgentPerformance {
+  agent_id: UUID;
+  agent_name: string;
+  today: AgentDailyPerformance;
+  portfolio: AgentPortfolioSummary;
+}
+
+// Flat response — market_name, date and data[] are all at the root level
+export interface AgentsPerformanceResponse {
+  success: boolean;
+  market_name: string;
+  date: string;
+  data: AgentPerformance[];
+}
+
 // ── Request Payload Types ──────────────────────────────────────────
 
 export interface RejectLoanPayload {

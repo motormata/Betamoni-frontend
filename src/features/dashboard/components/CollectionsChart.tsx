@@ -33,8 +33,8 @@ function aggregateData(breakdown: HistoricalDayEntry[], timeRange: TimeRange): C
         month: "short",
         day: "numeric",
       }).replace(",", ""),
-      expected: d.repayments.total_expected,
-      collected: d.collections.total_recovered,
+      expected: Number(d.total_expected) || 0,
+      collected: Number(d.total_collections) || 0,
     }));
   }
 
@@ -46,8 +46,8 @@ function aggregateData(breakdown: HistoricalDayEntry[], timeRange: TimeRange): C
       const label = `Wk ${new Date(weekOf + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
       if (!weekMap.has(weekOf)) weekMap.set(weekOf, { label, expected: 0, collected: 0 });
       const entry = weekMap.get(weekOf)!;
-      entry.expected += d.repayments.total_expected;
-      entry.collected += d.collections.total_recovered;
+      entry.expected += Number(d.total_expected) || 0;
+      entry.collected += Number(d.total_collections) || 0;
     });
     return Array.from(weekMap.values());
   }
@@ -60,16 +60,16 @@ function aggregateData(breakdown: HistoricalDayEntry[], timeRange: TimeRange): C
       const label = date.toLocaleDateString("en-US", { month: "short", year: "2-digit" });
       if (!monthMap.has(key)) monthMap.set(key, { label, expected: 0, collected: 0 });
       const entry = monthMap.get(key)!;
-      entry.expected += d.repayments.total_expected;
-      entry.collected += d.collections.total_recovered;
+      entry.expected += Number(d.total_expected) || 0;
+      entry.collected += Number(d.total_collections) || 0;
     });
     return Array.from(monthMap.values());
   }
 
   return breakdown.map((d) => ({
     label: d.date,
-    expected: d.repayments.total_expected,
-    collected: d.collections.total_recovered,
+    expected: Number(d.total_expected) || 0,
+    collected: Number(d.total_collections) || 0,
   }));
 }
 

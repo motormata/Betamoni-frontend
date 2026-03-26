@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import {
   useGetMarketsQuery,
   useGetDashboardSummaryQuery,
@@ -50,27 +50,20 @@ export function OverviewPage() {
   const { data: marketsRes, isLoading: marketsLoading } = useGetMarketsQuery();
   const markets = marketsRes?.data ?? [];
 
-  useEffect(() => {
-    if (markets.length > 0 && selectedMarketId === null) {
-      setSelectedMarketId(markets[0].id);
-    }
-  }, [markets, selectedMarketId]);
-
   const dateRange = useMemo(() => {
     if (timeRange === "custom") return { from: customFrom, to: customTo };
     return getDateRange(timeRange);
   }, [timeRange, customFrom, customTo]);
 
-  const skip = selectedMarketId === null;
-
+  // Fetch on mount without market_id (platform-wide); re-fetches with it when user picks a market
   const summary = useGetDashboardSummaryQuery(
-    { market_id: selectedMarketId! },
-    { skip },
+    selectedMarketId ? { market_id: selectedMarketId } : {},
   );
-  const historical = useGetHistoricalQuery(
-    { market_id: selectedMarketId!, from_date: dateRange.from, to_date: dateRange.to },
-    { skip },
-  );
+  const historical = useGetHistoricalQuery({
+    ...(selectedMarketId ? { market_id: selectedMarketId } : {}),
+    from_date: dateRange.from,
+    to_date: dateRange.to,
+  });
 
   const d = summary.data?.data;
 
