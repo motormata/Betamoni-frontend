@@ -7,6 +7,7 @@ import type {
   SupervisorLoansSummaryResponse,
   SupervisorLoansListResponse,
   SupervisorLoanDetailResponse,
+  SupervisorLoansQueryParams,
   AgentsPerformanceResponse,
 } from "@/types/supervisor.types";
 
@@ -21,8 +22,19 @@ export const supervisorApi = baseApi.injectEndpoints({
     }),
 
     // ── GET /api/supervisor/loans ─────────────────────────────
-    getSupervisorLoans: builder.query<SupervisorLoansListResponse, number | void>({
-      query: (page = 1) => `/api/supervisor/loans?page=${page}`,
+    getSupervisorLoans: builder.query<SupervisorLoansListResponse, SupervisorLoansQueryParams>({
+      query: (params) => {
+        const sp = new URLSearchParams();
+        if (params.page) sp.set("page", String(params.page));
+        if (params.status) sp.set("status", params.status);
+        if (params.agent_id) sp.set("agent_id", params.agent_id);
+        if (params.market_id) sp.set("market_id", params.market_id);
+        if (params.from_date) sp.set("from_date", params.from_date);
+        if (params.to_date) sp.set("to_date", params.to_date);
+        if (params.search) sp.set("search", params.search);
+        const qs = sp.toString();
+        return `/api/supervisor/loans${qs ? `?${qs}` : ""}`;
+      },
       providesTags: ["SupervisorLoans"],
     }),
 

@@ -44,6 +44,16 @@ export interface DisburseLoanPayload {
   disbursement_date: string;
 }
 
+export interface SupervisorLoansQueryParams {
+  page?: number;
+  status?: string;
+  agent_id?: UUID;
+  market_id?: UUID;
+  from_date?: string;   // YYYY-MM-DD
+  to_date?: string;     // YYYY-MM-DD
+  search?: string;
+}
+
 // ── Response Data Types ────────────────────────────────────────────
 
 export interface SupervisorLoan {
