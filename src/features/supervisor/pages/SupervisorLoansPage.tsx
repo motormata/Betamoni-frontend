@@ -1,13 +1,15 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Banknote, ChevronRight, User2, UserCog, Filter, Search, Trash2 } from "lucide-react";
+import { Banknote, ChevronRight, User2, UserCog, Filter, Search, Trash2, Package } from "lucide-react";
 import { useGetSupervisorLoansQuery, useGetAgentsPerformanceQuery } from "@/api/endpoints/supervisorApi";
 import { useGetClusterMarketsQuery } from "@/api/endpoints/clustersApi";
+import { useGetSupervisorProductsQuery } from "@/api/endpoints/productsApi";
 import type { SupervisorLoansQueryParams } from "@/types/supervisor.types";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Pagination } from "@/components/shared/Pagination";
 import { LoadingState, ErrorState, EmptyState } from "@/components/shared/FeedbackStates";
+import { formatCurrency } from "@/lib/formatters";
 
 // ── Loan Status Options ────────────────────────────────────────────
 
@@ -42,11 +44,14 @@ export function SupervisorLoansPage() {
   const { data: res, isLoading, isError, isFetching } = useGetSupervisorLoansQuery(filters);
   const { data: agentsRes } = useGetAgentsPerformanceQuery();
   const { data: marketsRes } = useGetClusterMarketsQuery();
+  const { data: productsRes } = useGetSupervisorProductsQuery();
 
   const loans = res?.data?.data ?? [];
   const pagination = res?.data;
   const agents = agentsRes?.data ?? [];
   const markets = marketsRes?.data ?? [];
+  const products = productsRes?.data ?? [];
+  const activeDeals = products.filter((p) => p.is_active).length;
 
   // ── Actions ──────────────────────────────────────────────────
   function applyFilters(e?: React.FormEvent) {
@@ -83,6 +88,23 @@ export function SupervisorLoansPage() {
         title="Agent Loans"
         description="Review and manage loans created by your agents"
       />
+
+      {/* Available Deals Banner */}
+      {products.length > 0 && (
+        <div className="flex items-center gap-3 rounded-xl border bg-card px-4 py-3">
+          <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+            <Package className="h-4 w-4 text-primary" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold">
+              {activeDeals} Active Loan {activeDeals === 1 ? "Deal" : "Deals"}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {products.map((p) => `${p.name} — ${formatCurrency(p.principal_amount)}`).join(" · ")}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* ── Filters Card ──────────────────────────────────────── */}
       <div className="rounded-xl border bg-card overflow-hidden">
@@ -259,7 +281,10 @@ export function SupervisorLoansPage() {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <p className="text-sm font-semibold">
-                      ₦{Number(loan.principal_amount).toLocaleString()}
+                      {/* Show product name if available, else fall back to amount */}
+                      {(loan as any).product?.name
+                        ? (loan as any).product.name
+                        : `₦${Number(loan.principal_amount).toLocaleString()}`}
                     </p>
                     <StatusBadge status={loan.status} />
                   </div>

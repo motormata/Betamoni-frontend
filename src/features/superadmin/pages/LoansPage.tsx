@@ -1,19 +1,27 @@
 import { useState } from "react";
-import { Banknote, Plus } from "lucide-react";
+import { Banknote, Plus, Calendar, DollarSign } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
-import { useAddCapitalMutation } from "@/api/endpoints/financeApi";
+import { Pagination } from "@/components/shared/Pagination";
+import { LoadingState, EmptyState } from "@/components/shared/FeedbackStates";
+import { useAddCapitalMutation, useGetFinanceHistoryQuery } from "@/api/endpoints/financeApi";
+import { formatCurrency } from "@/lib/formatters";
 
-// ── Finance Page (Super-Admin Loans) ───────────────────────────────
+// ── Finance Page ───────────────────────────────────────────────────
 
 export function LoansPage() {
   const [showForm, setShowForm] = useState(false);
+  const [historyPage, setHistoryPage] = useState(1);
+  const { data: historyRes, isLoading: historyLoading } = useGetFinanceHistoryQuery(historyPage);
+
+  const entries = historyRes?.data?.data ?? [];
+  const pagination = historyRes?.data;
 
   return (
     <div className="p-4 lg:p-6 space-y-4">
       <PageHeader
         icon={Banknote}
         title="Finance"
-        description="Manage capital and financial operations"
+        description="Manage capital injections and view financial history"
         action={
           <button
             type="button"
@@ -21,7 +29,7 @@ export function LoansPage() {
             className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors"
           >
             <Plus className="h-3.5 w-3.5" />
-            Capital
+            Add Capital
           </button>
         }
       />
@@ -30,10 +38,66 @@ export function LoansPage() {
         <AddCapitalForm onSuccess={() => setShowForm(false)} />
       )}
 
-      <div className="rounded-xl border bg-card p-6">
-        <p className="text-sm text-muted-foreground">
-          Additional financial reports and loan management features coming soon.
-        </p>
+      {/* Capital History */}
+      <div className="rounded-xl border bg-card overflow-hidden">
+        <div className="px-4 py-3 border-b">
+          <p className="text-sm font-semibold">Capital Injection History</p>
+        </div>
+
+        {historyLoading && <LoadingState />}
+        {!historyLoading && entries.length === 0 && (
+          <EmptyState message="No capital injections recorded yet." />
+        )}
+
+        {entries.length > 0 && (
+          <div className="max-h-[55vh] overflow-y-auto custom-scrollbar">
+            <ul className="divide-y divide-border">
+              {entries.map((entry) => (
+                <li
+                  key={entry.id}
+                  className="flex items-center justify-between gap-3 px-4 py-3"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="h-8 w-8 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0">
+                      <DollarSign className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">{entry.description}</p>
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
+                        <Calendar className="h-3 w-3 shrink-0" />
+                        <span>
+                          {entry.transaction_date
+                            ? new Date(entry.transaction_date).toLocaleDateString("en-GB", {
+                                day: "2-digit",
+                                month: "short",
+                                year: "numeric",
+                              })
+                            : "—"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400 shrink-0">
+                    +{formatCurrency(entry.amount)}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {pagination && (
+          <div className="px-4 pb-3">
+            <Pagination
+              currentPage={pagination.current_page}
+              lastPage={pagination.last_page}
+              totalItems={pagination.total}
+              fromItem={pagination.from}
+              toItem={pagination.to}
+              onPageChange={setHistoryPage}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

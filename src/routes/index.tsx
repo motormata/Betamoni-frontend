@@ -4,6 +4,7 @@ import { ProtectedRoute } from "./ProtectedRoutes";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { OverviewPage } from "@/features/superadmin/pages/OverviewPage";
 import { LoansPage } from "@/features/superadmin/pages/LoansPage";
+import { ProductsPage } from "@/features/superadmin/pages/ProductsPage";
 import { ClustersPage } from "@/features/superadmin/pages/ClustersPage";
 import { StaffPage } from "@/features/superadmin/pages/StaffPage";
 import { SettingsPage } from "@/features/settings/pages/SettingsPage";
@@ -38,7 +39,8 @@ function RoleBasedLoansPage() {
   const role = useAppSelector((state) => state.auth.user?.role);
   if (role === "agent") return <AgentLoansPage />;
   if (role === "supervisor") return <SupervisorLoansPage />;
-  return <LoansPage />;
+  // superadmin → redirect to /finance
+  return <Navigate to="/finance" replace />;
 }
 
 // ── Role-Based Loan Detail ─────────────────────────────────────────
@@ -74,6 +76,17 @@ export const router = createBrowserRouter([
         path: "dashboard",
         element: <RoleBasedDashboard />,
       },
+      // Superadmin finance page
+      {
+        path: "finance",
+        element: <LoansPage />,
+      },
+      // Superadmin loan deals / products
+      {
+        path: "products",
+        element: <ProductsPage />,
+      },
+      // Agent + Supervisor loans  (superadmin redirects to /finance)
       {
         path: "loans",
         element: <RoleBasedLoansPage />,

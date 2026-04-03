@@ -6,6 +6,7 @@ import {
   UserCog,
   CreditCard,
   ShieldCheck,
+  Package,
   type LucideIcon,
 } from "lucide-react";
 import type { UserRole } from "@/types/auth.types";
@@ -33,9 +34,15 @@ const allMenuItems: MenuItem[] = [
     allowedRoles: ["super-admin", "supervisor", "agent"],
   },
   {
+    icon: Package,
+    label: "Deals",
+    path: "/products",
+    allowedRoles: ["super-admin"],
+  },
+  {
     icon: Banknote,
     label: "Finance",
-    path: "/loans",
+    path: "/finance",
     allowedRoles: ["super-admin"],
   },
   {
@@ -95,7 +102,9 @@ export function getMenuItems(role?: UserRole | null): MenuItem[] {
  */
 export const pageTitleMap: Record<string, string> = {
   "/dashboard": "Overview",
-  "/loans": "Finance",
+  "/finance": "Finance",
+  "/products": "Loan Deals",
+  "/loans": "Loans",
   "/borrowers": "Borrowers",
   "/payments": "Payments",
   "/agents": "Agents",

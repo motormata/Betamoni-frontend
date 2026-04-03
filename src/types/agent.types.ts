@@ -6,11 +6,6 @@ import type { UUID, PaginatedData } from "@/types/common.types";
 export type Gender = "male" | "female";
 export type RepaymentFrequency = "daily" | "weekly" | "bi-weekly" | "monthly";
 
-export interface Guarantor {
-  name: string;
-  phone: string;
-  address: string;
-}
 
 export interface CreateBorrowerPayload {
   first_name: string;
@@ -22,19 +17,9 @@ export interface CreateBorrowerPayload {
 }
 
 export interface CreateAgentLoanPayload {
-  // Required fields
   borrower_id: UUID;
-  principal_amount: number;
-  interest_rate: number;
-  duration_days: number;
-  repayment_frequency: RepaymentFrequency;
-  // Optional fields
-  collection_day?: string;
-  collection_time?: string;
-  collection_location?: string;
-  purpose?: string;
-  notes?: string;
-  guarantors?: Guarantor[];
+  loan_product_id: UUID;
+  quantity: number;
 }
 
 // ── Response Data Types ────────────────────────────────────────────

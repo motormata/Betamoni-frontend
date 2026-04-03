@@ -1,4 +1,5 @@
 import { baseApi } from "../baseApi";
+import type { FinanceLedgerEntry, FinanceHistoryResponse } from "@/types/product.types";
 
 // ── Types ──────────────────────────────────────────────────────────
 
@@ -18,6 +19,7 @@ export interface AddCapitalResponse {
 
 export const financeApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
+    // ── POST /api/admin/cash-ledger/add-capital ───────────────
     addCapital: builder.mutation<AddCapitalResponse, AddCapitalPayload>({
       query: (body) => ({
         url: "/api/admin/cash-ledger/add-capital",
@@ -26,7 +28,14 @@ export const financeApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ["Loans", "Transactions"],
     }),
+
+    // ── GET /api/cash-ledger?type=capital_in ──────────────────
+    getFinanceHistory: builder.query<FinanceHistoryResponse, number | void>({
+      query: (page = 1) => `/api/cash-ledger?type=capital_in&page=${page}`,
+      providesTags: ["Transactions"],
+    }),
   }),
 });
 
-export const { useAddCapitalMutation } = financeApi;
+export const { useAddCapitalMutation, useGetFinanceHistoryQuery } = financeApi;
+export type { FinanceLedgerEntry };
