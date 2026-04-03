@@ -4,10 +4,10 @@ import { Banknote, ChevronRight, User2, UserCog, Filter, Search, Trash2 } from "
 import { useGetSupervisorLoansQuery, useGetAgentsPerformanceQuery } from "@/api/endpoints/supervisorApi";
 import { useGetClusterMarketsQuery } from "@/api/endpoints/clustersApi";
 import type { SupervisorLoansQueryParams } from "@/types/supervisor.types";
-import { AgentPageHeader } from "@/features/agent/components/AgentPageHeader";
-import { StatusBadge } from "@/features/agent/components/StatusBadge";
-import { Pagination } from "@/features/agent/components/Pagination";
-import { LoadingState, ErrorState, EmptyState } from "@/features/agent/components/FeedbackStates";
+import { PageHeader } from "@/components/shared/PageHeader";
+import { StatusBadge } from "@/components/shared/StatusBadge";
+import { Pagination } from "@/components/shared/Pagination";
+import { LoadingState, ErrorState, EmptyState } from "@/components/shared/FeedbackStates";
 
 // ── Loan Status Options ────────────────────────────────────────────
 
@@ -78,7 +78,7 @@ export function SupervisorLoansPage() {
 
   return (
     <div className="p-4 lg:p-6 space-y-4">
-      <AgentPageHeader
+      <PageHeader
         icon={Banknote}
         title="Agent Loans"
         description="Review and manage loans created by your agents"

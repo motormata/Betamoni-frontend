@@ -50,15 +50,15 @@
 
 ## Architecture Decisions
 
-### 1. Feature-Based Folder Structure
+### 1. Role-Based Module Structure
 
-**Decision:** Organize by features, not file types  
+**Decision:** Organize features primarily by user role (`superadmin`, `supervisor`, `agent`) rather than generic features.  
 **Rationale:**
 
-- Fintech apps grow complex quickly
-- Each feature (auth, loans, users) is self-contained
-- Easier to locate bugs and maintain code
-- Scales better for medium/large applications
+- Modules like loans and dashboards vary drastically between an agent and a superadmin.
+- Isolating by role makes it easier to enforce authorization boundaries.
+- Reusable elements are extracted to a globally shared `/components/shared/` folder.
+- Scales better for role-specific feature sets without entangling logic.
 
 ### 2. Centralized API Layer (Option A)
 
@@ -113,17 +113,17 @@ betamoni-admin/
 │   │   └── endpoints/       # API endpoint definitions
 │   │       └── authApi.ts   # Authentication endpoints
 │   │
-│   ├── features/            # Feature Modules
-│   │   └── auth/
-│   │       ├── components/  # Auth-specific components
-│   │       │   └── LoginForm.tsx
-│   │       └── pages/       # Auth pages
-│   │           └── LoginPage.tsx
+│   ├── features/            # Role-Based Modules
+│   │   ├── auth/            # Auth pages & components
+│   │   ├── superadmin/      # Admin dashboard, staff, clusters, loans
+│   │   ├── supervisor/      # Supervisor-specific pages
+│   │   └── agent/           # Agent-specific pages
 │   │
 │   ├── components/          # Shared Components
 │   │   ├── ui/              # shadcn components (Button, Input, etc.)
 │   │   ├── layout/          # Layout components (Sidebar, Header)
-│   │   └── feedback/        # Loading & error components
+│   │   ├── feedback/        # Loading & error components
+│   │   └── shared/          # Domain-agnostic reusable pieces (Badges, Cards)
 │   │
 │   ├── lib/                 # Utility Libraries
 │   │   ├── utils.ts         # shadcn cn() utility
@@ -159,17 +159,18 @@ betamoni-admin/
 
 ### Folder Organization Rules
 
-**`/features`** - Feature modules
+**`/features`** - Role-Based modules
 
-- Each feature is self-contained
-- Only that feature uses components/pages inside
-- If 2+ features need something, move it to `/components`
+- Grouped by account type (`superadmin`, `supervisor`, `agent`) and core infra (`auth`, `settings`).
+- Each module handles its own specific views and logic.
+- If 2+ modules need a specific component, move it to `/components/shared`.
 
 **`/components`** - Shared components
 
 - `/ui` = shadcn components (Button, Card, Input)
 - `/layout` = Layouts used across features
 - `/feedback` = Loading states, error boundaries
+- `/shared` = App-specific reusable presentational elements (DetailCard, SummaryCard, PageHeader)
 
 **`/api`** - API layer
 
@@ -433,10 +434,9 @@ function useAuth() {
    - Global error banners for API failures
 ### 📋 Planned Features
 
-- Loans management module
-- Clusters management module
+- Full administrative loan management workflows
+- In-depth cluster hierarchy reporting & analytics
 - Transactions/Ledger module
-- Reports/Analytics
 - Advanced settings & profile management
 ---
 
@@ -887,6 +887,6 @@ Set production environment variables in hosting platform.
 
 ---
 
-**Last Updated:** March 2026  
-**Project Phase:** Dashboard & User Management Complete  
-**Next Milestone:** Building the Loans and Clusters modules  
+**Last Updated:** April 2026  
+**Project Phase:** Architecture Refactored to Role-Based Modules  
+**Next Milestone:** Deepening Sub-Modules (Loans, Cluster reports)  

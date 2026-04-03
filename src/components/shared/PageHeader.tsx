@@ -2,14 +2,14 @@ import type { LucideIcon } from "lucide-react";
 
 // ── Reusable Page Header ───────────────────────────────────────────
 
-interface AgentPageHeaderProps {
+interface PageHeaderProps {
   icon: LucideIcon;
   title: string;
   description: string;
   action?: React.ReactNode;
 }
 
-export function AgentPageHeader({ icon: Icon, title, description, action }: AgentPageHeaderProps) {
+export function PageHeader({ icon: Icon, title, description, action }: PageHeaderProps) {
   return (
     <div className="flex items-center justify-between gap-3">
       <div className="flex items-center gap-3 min-w-0">

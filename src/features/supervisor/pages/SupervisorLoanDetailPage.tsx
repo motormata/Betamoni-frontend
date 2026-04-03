@@ -18,8 +18,9 @@ import {
   useRejectLoanMutation,
   useDisburseLoanMutation,
 } from "@/api/endpoints/supervisorApi";
-import { StatusBadge } from "@/features/agent/components/StatusBadge";
-import { LoadingState, ErrorState } from "@/features/agent/components/FeedbackStates";
+import { StatusBadge } from "@/components/shared/StatusBadge";
+import { LoadingState, ErrorState } from "@/components/shared/FeedbackStates";
+import { DetailCard } from "@/components/shared/DetailCard";
 
 // ── Supervisor Loan Detail Page ────────────────────────────────────
 
@@ -283,27 +284,5 @@ function DisburseForm({ loanId }: { loanId: string }) {
         <p className="text-xs text-destructive mt-1">Failed to disburse. Try again.</p>
       )}
     </form>
-  );
-}
-
-// ── Detail Card ────────────────────────────────────────────────────
-
-interface DetailCardProps {
-  icon: React.ElementType;
-  label: string;
-  value: string;
-}
-
-function DetailCard({ icon: Icon, label, value }: DetailCardProps) {
-  return (
-    <div className="rounded-xl border bg-card p-3">
-      <div className="flex items-center gap-2 mb-1">
-        <Icon className="h-3.5 w-3.5 text-muted-foreground" />
-        <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
-          {label}
-        </span>
-      </div>
-      <p className="text-sm font-semibold truncate">{value}</p>
-    </div>
   );
 }

@@ -9,15 +9,12 @@ import {
   Users2,
 } from "lucide-react";
 import { useGetAgentsPerformanceQuery } from "@/api/endpoints/supervisorApi";
-import { AgentPageHeader } from "@/features/agent/components/AgentPageHeader";
-import { LoadingState, ErrorState, EmptyState } from "@/features/agent/components/FeedbackStates";
+import { PageHeader } from "@/components/shared/PageHeader";
+import { LoadingState, ErrorState, EmptyState } from "@/components/shared/FeedbackStates";
+import { fmt } from "@/lib/formatters";
 import type { AgentPerformance } from "@/types/supervisor.types";
 
 // ── Helpers ────────────────────────────────────────────────────────
-
-function fmt(value: number): string {
-  return `₦${Number(value).toLocaleString("en-NG")}`;
-}
 
 function rateColor(rate: number): string {
   if (rate >= 80) return "text-emerald-600";
@@ -219,7 +216,7 @@ export function SupervisorAgentsPage() {
 
   return (
     <div className="p-4 lg:p-6 space-y-4">
-      <AgentPageHeader
+      <PageHeader
         icon={ShieldCheck}
         title="Agents"
         description={

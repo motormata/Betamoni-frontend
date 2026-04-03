@@ -4,12 +4,12 @@ import {
   useGetDashboardSummaryQuery,
   useGetHistoricalQuery,
 } from "@/api/endpoints/dashboardApi";
-import { DashboardFilters } from "../components/DashboardFilters";
-import { KpiCards } from "../components/KpiCards";
-import { CashPositionCard } from "../components/CashPositionCard";
-import { PortfolioCard } from "../components/PortfolioCard";
-import { TodayRepaymentsCard } from "../components/TodayRepaymentsCard";
-import { CollectionsChart, type TimeRange } from "../components/CollectionsChart";
+import { DashboardFilters } from "../components/dashboard/DashboardFilters";
+import { KpiCards } from "../components/dashboard/KpiCards";
+import { CashPositionCard } from "../components/dashboard/CashPositionCard";
+import { PortfolioCard } from "../components/dashboard/PortfolioCard";
+import { TodayRepaymentsCard } from "../components/dashboard/TodayRepaymentsCard";
+import { CollectionsChart, type TimeRange } from "../components/dashboard/CollectionsChart";
 
 // ── Date Helpers ───────────────────────────────────────────────────
 
@@ -55,7 +55,6 @@ export function OverviewPage() {
     return getDateRange(timeRange);
   }, [timeRange, customFrom, customTo]);
 
-  // Fetch on mount without market_id (platform-wide); re-fetches with it when user picks a market
   const summary = useGetDashboardSummaryQuery(
     selectedMarketId ? { market_id: selectedMarketId } : {},
   );
@@ -67,13 +66,8 @@ export function OverviewPage() {
 
   const d = summary.data?.data;
 
-  // ────────────────────────────────────────────────────────────────
-  // Mobile:  stacked column
-  // Desktop: 2×2 grid of 4 cards, then chart full-width
-  // ────────────────────────────────────────────────────────────────
   return (
     <div className="p-4 lg:p-6 space-y-5">
-      {/* Market selector */}
       <DashboardFilters
         markets={markets}
         selectedMarketId={selectedMarketId}
@@ -81,12 +75,9 @@ export function OverviewPage() {
         isLoadingMarkets={marketsLoading}
       />
 
-      {/* 2×2 card grid on lg, stacked on mobile */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Card 1: Active Loans (2×2 internal grid) */}
         <KpiCards data={d?.active_loans} isLoading={summary.isLoading} />
 
-        {/* Card 2: Cash on Hand + Cash Recovered (merged) */}
         <CashPositionCard
           data={d?.cash_position}
           collectionsData={d?.today?.collections}
@@ -94,14 +85,12 @@ export function OverviewPage() {
           isError={summary.isError}
         />
 
-        {/* Card 3: Portfolio */}
         <PortfolioCard
           data={d?.portfolio}
           isLoading={summary.isLoading}
           isError={summary.isError}
         />
 
-        {/* Card 4: Today's Repayments */}
         <TodayRepaymentsCard
           data={d?.today?.expected_repayments}
           isLoading={summary.isLoading}
@@ -109,7 +98,6 @@ export function OverviewPage() {
         />
       </div>
 
-      {/* Historical chart (full width, filter built-in) */}
       <CollectionsChart
         data={historical.data?.data}
         isLoading={historical.isLoading}

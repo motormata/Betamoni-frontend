@@ -5,9 +5,9 @@ import {
   useGetPaymentsQuery,
 } from "@/api/endpoints/paymentApi";
 import type { PaymentMethod } from "@/types/payment.types";
-import { AgentPageHeader } from "../components/AgentPageHeader";
-import { Pagination } from "../components/Pagination";
-import { LoadingState, ErrorState, EmptyState } from "../components/FeedbackStates";
+import { PageHeader } from "@/components/shared/PageHeader";
+import { Pagination } from "@/components/shared/Pagination";
+import { LoadingState, ErrorState, EmptyState } from "@/components/shared/FeedbackStates";
 
 // ── Agent Payments Page ────────────────────────────────────────────
 
@@ -16,7 +16,7 @@ export function AgentPaymentsPage() {
 
   return (
     <div className="p-4 lg:p-6 space-y-4">
-      <AgentPageHeader
+      <PageHeader
         icon={CreditCard}
         title="Payments"
         description="Record and view borrower repayments"

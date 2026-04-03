@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Banknote, Plus } from "lucide-react";
-import { AgentPageHeader } from "@/features/agent/components/AgentPageHeader";
+import { PageHeader } from "@/components/shared/PageHeader";
 import { useAddCapitalMutation } from "@/api/endpoints/financeApi";
 
 // ── Finance Page (Super-Admin Loans) ───────────────────────────────
@@ -10,7 +10,7 @@ export function LoansPage() {
 
   return (
     <div className="p-4 lg:p-6 space-y-4">
-      <AgentPageHeader
+      <PageHeader
         icon={Banknote}
         title="Finance"
         description="Manage capital and financial operations"
@@ -26,12 +26,10 @@ export function LoansPage() {
         }
       />
 
-      {/* Add Capital Form (expandable) */}
       {showForm && (
         <AddCapitalForm onSuccess={() => setShowForm(false)} />
       )}
 
-      {/* Placeholder for future content */}
       <div className="rounded-xl border bg-card p-6">
         <p className="text-sm text-muted-foreground">
           Additional financial reports and loan management features coming soon.

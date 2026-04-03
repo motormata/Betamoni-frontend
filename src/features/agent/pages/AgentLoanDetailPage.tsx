@@ -4,8 +4,9 @@ import { ArrowLeft, Banknote, Calendar, Percent, Clock, User2, CreditCard } from
 import { useGetAgentLoanByIdQuery } from "@/api/endpoints/agentApi";
 import { useCreatePaymentMutation } from "@/api/endpoints/paymentApi";
 import type { PaymentMethod } from "@/types/payment.types";
-import { StatusBadge } from "../components/StatusBadge";
-import { LoadingState, ErrorState } from "../components/FeedbackStates";
+import { StatusBadge } from "@/components/shared/StatusBadge";
+import { LoadingState, ErrorState } from "@/components/shared/FeedbackStates";
+import { DetailCard } from "@/components/shared/DetailCard";
 
 // ── Agent Loan Detail Page ─────────────────────────────────────────
 
@@ -219,31 +220,5 @@ function InlinePaymentForm({ loanId, onSuccess }: { loanId: string; onSuccess: (
         {isLoading ? "Recording…" : "Record Payment"}
       </button>
     </form>
-  );
-}
-
-// ── Detail Card ────────────────────────────────────────────────────
-
-interface DetailCardProps {
-  icon: React.ElementType;
-  label: string;
-  value: string;
-  mono?: boolean;
-  fullWidth?: boolean;
-}
-
-function DetailCard({ icon: Icon, label, value, mono, fullWidth }: DetailCardProps) {
-  return (
-    <div className={`rounded-xl border bg-card p-3 ${fullWidth ? "col-span-2" : ""}`}>
-      <div className="flex items-center gap-2 mb-1">
-        <Icon className="h-3.5 w-3.5 text-muted-foreground" />
-        <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
-          {label}
-        </span>
-      </div>
-      <p className={`text-sm font-semibold truncate ${mono ? "font-mono text-xs" : ""}`}>
-        {value}
-      </p>
-    </div>
   );
 }

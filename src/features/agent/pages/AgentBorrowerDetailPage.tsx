@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, User2, Phone, MapPin, Calendar, Building2 } from "lucide-react";
 import { useGetAgentBorrowerByIdQuery } from "@/api/endpoints/agentApi";
-import { LoadingState, ErrorState } from "../components/FeedbackStates";
+import { LoadingState, ErrorState } from "@/components/shared/FeedbackStates";
 
 // ── Agent Borrower Detail Page ─────────────────────────────────────
 

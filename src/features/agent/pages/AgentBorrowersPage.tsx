@@ -7,9 +7,9 @@ import {
 } from "@/api/endpoints/agentApi";
 import { useGetClusterMarketsQuery } from "@/api/endpoints/clustersApi";
 import type { Gender } from "@/types/agent.types";
-import { AgentPageHeader } from "../components/AgentPageHeader";
-import { Pagination } from "../components/Pagination";
-import { LoadingState, ErrorState, EmptyState } from "../components/FeedbackStates";
+import { PageHeader } from "@/components/shared/PageHeader";
+import { Pagination } from "@/components/shared/Pagination";
+import { LoadingState, ErrorState, EmptyState } from "@/components/shared/FeedbackStates";
 
 // ── Agent Borrowers Page ───────────────────────────────────────────
 
@@ -24,7 +24,7 @@ export function AgentBorrowersPage() {
 
   return (
     <div className="p-4 lg:p-6 space-y-4">
-      <AgentPageHeader
+      <PageHeader
         icon={Users2}
         title="Borrowers"
         description="Manage your registered borrowers"

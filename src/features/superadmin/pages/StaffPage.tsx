@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { Users, Plus, Loader2 } from "lucide-react";
-import { StaffOverviewCard } from "../components/StaffOverviewCard";
-import { UserListTabs } from "../components/UserListTabs";
-import { CreateUserForm } from "../components/CreateUserForm";
+import { StaffOverviewCard } from "../components/staff/StaffOverviewCard";
+import { UserListTabs } from "../components/staff/UserListTabs";
+import { CreateUserForm } from "../components/staff/CreateUserForm";
 import { useGetUsersQuery } from "@/api/endpoints/staffApi";
-import { AgentPageHeader } from "@/features/agent/components/AgentPageHeader";
+import { PageHeader } from "@/components/shared/PageHeader";
 
 export function StaffPage() {
   const [showForm, setShowForm] = useState(false);
@@ -21,7 +21,7 @@ export function StaffPage() {
 
   return (
     <div className="p-4 lg:p-6 space-y-4">
-      <AgentPageHeader
+      <PageHeader
         icon={Users}
         title="Staff"
         description="View, manage, and assign roles across your team"
@@ -37,15 +37,12 @@ export function StaffPage() {
         }
       />
 
-      {/* Overview Stats */}
       <StaffOverviewCard users={users} />
 
-      {/* Create User Form (expandable) */}
       {showForm && (
         <CreateUserForm onSuccess={() => setShowForm(false)} />
       )}
 
-      {/* Tabbed User List */}
       <UserListTabs users={users} />
     </div>
   );

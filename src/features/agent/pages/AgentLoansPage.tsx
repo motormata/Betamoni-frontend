@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Banknote, Plus, ChevronRight, Copy, Check } from "lucide-react";
+import { Banknote, Plus, ChevronRight } from "lucide-react";
 import {
   useGetAgentLoansQuery,
   useGetAgentBorrowersQuery,
@@ -8,10 +8,11 @@ import {
 } from "@/api/endpoints/agentApi";
 
 import type { RepaymentFrequency } from "@/types/agent.types";
-import { AgentPageHeader } from "../components/AgentPageHeader";
-import { StatusBadge } from "../components/StatusBadge";
-import { Pagination } from "../components/Pagination";
-import { LoadingState, ErrorState, EmptyState } from "../components/FeedbackStates";
+import { PageHeader } from "@/components/shared/PageHeader";
+import { StatusBadge } from "@/components/shared/StatusBadge";
+import { Pagination } from "@/components/shared/Pagination";
+import { LoadingState, ErrorState, EmptyState } from "@/components/shared/FeedbackStates";
+import { CopyButton } from "@/components/shared/CopyButton";
 
 // ── Agent Loans Page ───────────────────────────────────────────────
 
@@ -26,7 +27,7 @@ export function AgentLoansPage() {
 
   return (
     <div className="p-4 lg:p-6 space-y-4">
-      <AgentPageHeader
+      <PageHeader
         icon={Banknote}
         title="Loans"
         description="Manage your loan portfolio"
@@ -277,24 +278,3 @@ function CreateLoanForm({ onSuccess }: { onSuccess: () => void }) {
   );
 }
 
-// ── Copy Button ──────────────────────────────────────────────────
-
-function CopyButton({ text }: { text: string }) {
-  const [copied, setCopied] = useState(false);
-  const handleCopy = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-  return (
-    <button
-      type="button"
-      onClick={handleCopy}
-      className="p-1 rounded-md hover:bg-muted text-muted-foreground transition-colors"
-      title="Copy Loan ID"
-    >
-      {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
-    </button>
-  );
-}

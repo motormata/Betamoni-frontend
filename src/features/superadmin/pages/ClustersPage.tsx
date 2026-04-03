@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { LayoutGrid, MapPin, Store, Plus } from "lucide-react";
-import { RegionsListPanel } from "../components/RegionsListPanel";
-import { MarketsListPanel } from "../components/MarketsListPanel";
-import { CreateRegionForm } from "../components/CreateRegionForm";
-import { CreateMarketForm } from "../components/CreateMarketForm";
-import { AgentPageHeader } from "@/features/agent/components/AgentPageHeader";
+import { RegionsListPanel } from "../components/clusters/RegionsListPanel";
+import { MarketsListPanel } from "../components/clusters/MarketsListPanel";
+import { CreateRegionForm } from "../components/clusters/CreateRegionForm";
+import { CreateMarketForm } from "../components/clusters/CreateMarketForm";
+import { PageHeader } from "@/components/shared/PageHeader";
 import { useGetRegionsQuery, useGetClusterMarketsQuery } from "@/api/endpoints/clustersApi";
 
 // ── Tab type ───────────────────────────────────────────────────────
@@ -26,7 +26,7 @@ export function ClustersPage() {
 
   return (
     <div className="p-4 lg:p-6 space-y-4">
-      <AgentPageHeader
+      <PageHeader
         icon={LayoutGrid}
         title="Clusters"
         description="Manage regions and markets across your network"
@@ -77,7 +77,6 @@ export function ClustersPage() {
           {isRegions ? <RegionsListPanel /> : <MarketsListPanel />}
         </div>
 
-        {/* Simple count footer */}
         <div className="px-4 py-2 border-t text-xs text-muted-foreground">
           Showing {isRegions ? regionCount : marketCount} {isRegions ? "regions" : "markets"}
         </div>

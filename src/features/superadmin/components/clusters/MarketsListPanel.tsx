@@ -1,6 +1,6 @@
 import { Store, MapPin } from "lucide-react";
 import { useGetClusterMarketsQuery } from "@/api/endpoints/clustersApi";
-import { LoadingState, ErrorState, EmptyState } from "@/features/agent/components/FeedbackStates";
+import { LoadingState, ErrorState, EmptyState } from "@/components/shared/FeedbackStates";
 
 // ── Markets List Panel ─────────────────────────────────────────────
 

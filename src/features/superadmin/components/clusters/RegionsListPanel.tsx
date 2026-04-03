@@ -1,6 +1,6 @@
 import { MapPin, Hash } from "lucide-react";
 import { useGetRegionsQuery } from "@/api/endpoints/clustersApi";
-import { LoadingState, ErrorState, EmptyState } from "@/features/agent/components/FeedbackStates";
+import { LoadingState, ErrorState, EmptyState } from "@/components/shared/FeedbackStates";
 
 // ── Regions List Panel ─────────────────────────────────────────────
 
