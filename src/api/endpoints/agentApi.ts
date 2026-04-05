@@ -12,6 +12,25 @@ import type {
   AgentLoansSummaryResponse,
 } from "@/types/agent.types";
 
+// ── Today Repayments Response ─────────────────────────────────────
+
+export interface TodayRepaymentsData {
+  date: string;
+  total_schedules: number;
+  pending_count: number;
+  paid_count: number;
+  total_expected: number;
+  total_collected: number;
+  outstanding: number;
+  collection_rate: number;
+  pending_list: unknown[];
+}
+
+export interface TodayRepaymentsResponse {
+  success: boolean;
+  data: TodayRepaymentsData;
+}
+
 // ── Agent API Endpoints ────────────────────────────────────────────
 
 export const agentApi = baseApi.injectEndpoints({
@@ -65,6 +84,15 @@ export const agentApi = baseApi.injectEndpoints({
       query: (id) => `/api/agent/loans/${id}`,
       providesTags: ["AgentLoans"],
     }),
+
+    // ── GET /api/dashboard/today-repayments ───────────────────
+    getTodayRepayments: builder.query<TodayRepaymentsResponse, string | void>({
+      query: (date) =>
+        date
+          ? `/api/dashboard/today-repayments?date=${date}`
+          : "/api/dashboard/today-repayments",
+      providesTags: ["AgentLoans"],
+    }),
   }),
 });
 
@@ -80,4 +108,5 @@ export const {
   useLazyGetAgentLoanByIdQuery,
   useGetAgentBorrowerByIdQuery,
   useGetAgentLoanByIdQuery,
+  useGetTodayRepaymentsQuery,
 } = agentApi;
