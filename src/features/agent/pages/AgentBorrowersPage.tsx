@@ -10,6 +10,8 @@ import type { Gender } from "@/types/agent.types";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Pagination } from "@/components/shared/Pagination";
 import { LoadingState, ErrorState, EmptyState } from "@/components/shared/FeedbackStates";
+import { useToast } from "@/hooks/use-toast";
+import { getApiErrorMessage } from "@/lib/api-errors";
 
 // ── Agent Borrowers Page ───────────────────────────────────────────
 
@@ -102,6 +104,7 @@ export function AgentBorrowersPage() {
 function CreateBorrowerForm({ onSuccess }: { onSuccess: () => void }) {
   const [createBorrower, { isLoading, isError, error }] = useCreateBorrowerMutation();
   const { data: marketsRes, isLoading: marketsLoading } = useGetClusterMarketsQuery();
+  const { toast } = useToast();
   const markets = marketsRes?.data ?? [];
 
   const [firstName, setFirstName] = useState("");
@@ -115,17 +118,23 @@ function CreateBorrowerForm({ onSuccess }: { onSuccess: () => void }) {
     e.preventDefault();
     if (!gender || !marketId) return;
 
-    const result = await createBorrower({
-      first_name: firstName.trim(),
-      last_name: lastName.trim(),
-      phone: phone.trim(),
-      home_address: homeAddress.trim(),
-      market_id: marketId,
-      gender: gender as Gender,
-    });
+    try {
+      await createBorrower({
+        first_name: firstName.trim(),
+        last_name: lastName.trim(),
+        phone: phone.trim(),
+        home_address: homeAddress.trim(),
+        market_id: marketId,
+        gender: gender as Gender,
+      }).unwrap();
 
-    if ("data" in result) {
+      toast({
+        title: "Borrower registered",
+        description: `${firstName.trim()} ${lastName.trim()} is ready for loan creation.`,
+      });
       onSuccess();
+    } catch {
+      // Inline error text handles recoverable form failures.
     }
   }
 
@@ -217,7 +226,7 @@ function CreateBorrowerForm({ onSuccess }: { onSuccess: () => void }) {
 
       {isError && (
         <p className="text-xs text-destructive">
-          {(error as any)?.data?.message ?? "Failed to register borrower"}
+          {getApiErrorMessage(error, "Failed to register borrower")}
         </p>
       )}
 

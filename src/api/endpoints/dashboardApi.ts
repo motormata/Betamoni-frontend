@@ -6,7 +6,6 @@ import type {
   DailyCollectionsResponse,
   TodayRepaymentsResponse,
   HistoricalResponse,
-  MarketsResponse,
   DashboardQueryParams,
   HistoricalQueryParams,
 } from "@/types/dashboard.types";
@@ -15,12 +14,6 @@ import type {
 
 export const dashboardApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    // ── Markets list (for the selector dropdown) ────────────────
-    getMarkets: builder.query<MarketsResponse, void>({
-      query: () => "/api/markets",
-      providesTags: ["User"],
-    }),
-
     // ── Dashboard Summary (super-endpoint) ──────────────────────
     // Returns: cash_position, active_loans, today.collections,
     //          today.expected_repayments, portfolio — all in one call.
@@ -30,6 +23,7 @@ export const dashboardApi = baseApi.injectEndpoints({
         url: "/api/dashboard",
         params: market_id ? { market_id } : undefined,
       }),
+      providesTags: ["Dashboard"],
     }),
 
     // ── Active Loans (standalone — kept for drill-down use) ─────
@@ -38,6 +32,7 @@ export const dashboardApi = baseApi.injectEndpoints({
         url: "/api/dashboard/active-loans",
         params: market_id ? { market_id } : undefined,
       }),
+      providesTags: ["Dashboard"],
     }),
 
     // ── Historical (chart data) ─────────────────────────────────
@@ -47,6 +42,7 @@ export const dashboardApi = baseApi.injectEndpoints({
         url: "/api/dashboard/historical",
         params: { ...(market_id ? { market_id } : {}), from_date, to_date },
       }),
+      providesTags: ["Dashboard"],
     }),
 
     // ── Individual endpoints (kept for flexibility / future use) ─
@@ -55,6 +51,7 @@ export const dashboardApi = baseApi.injectEndpoints({
         url: "/api/dashboard/cash-position",
         params: { market_id, date },
       }),
+      providesTags: ["Dashboard"],
     }),
 
     getDailyCollections: builder.query<DailyCollectionsResponse, DashboardQueryParams>({
@@ -62,6 +59,7 @@ export const dashboardApi = baseApi.injectEndpoints({
         url: "/api/dashboard/daily-collections",
         params: { market_id, date },
       }),
+      providesTags: ["Dashboard"],
     }),
 
     getTodayRepayments: builder.query<TodayRepaymentsResponse, DashboardQueryParams>({
@@ -69,12 +67,12 @@ export const dashboardApi = baseApi.injectEndpoints({
         url: "/api/dashboard/today-repayments",
         params: { market_id, date },
       }),
+      providesTags: ["Dashboard"],
     }),
   }),
 });
 
 export const {
-  useGetMarketsQuery,
   useGetDashboardSummaryQuery,
   useGetActiveLoansQuery,
   useGetHistoricalQuery,

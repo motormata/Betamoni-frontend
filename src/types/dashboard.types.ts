@@ -29,6 +29,20 @@ export interface LoanTypePrincipal {
   total_principal: number;
 }
 
+export interface LoanActivitySummary {
+  approved_count: number;
+  approved_volume: number;
+  disbursed_count: number;
+  disbursed_volume: number;
+  rejected_count: number;
+  rejected_volume: number;
+}
+
+export interface LoanActivityBreakdown {
+  count: number;
+  total_principal: number;
+}
+
 // ── Cash Position ──────────────────────────────────────────────────
 
 export interface CashPositionData {
@@ -112,12 +126,23 @@ export interface HistoricalMarketEntry {
   collections: number | string;
   expected: number;
   collection_rate: number;
+  activity: {
+    approved: LoanActivityBreakdown;
+    disbursed: LoanActivityBreakdown;
+    rejected: LoanActivityBreakdown;
+  };
 }
 
 export interface HistoricalDayEntry {
   date: string;
   total_collections: number;
   total_expected: number;
+  total_approved_count: number;
+  total_approved_volume: number;
+  total_disbursed_count: number;
+  total_disbursed_volume: number;
+  total_rejected_count: number;
+  total_rejected_volume: number;
   markets: HistoricalMarketEntry[];
 }
 
@@ -131,6 +156,7 @@ export interface HistoricalData {
     total_collected: number;
     total_expected: number;
     collection_rate: number;
+    loans: LoanActivitySummary;
   };
   daily_breakdown: HistoricalDayEntry[];
 }

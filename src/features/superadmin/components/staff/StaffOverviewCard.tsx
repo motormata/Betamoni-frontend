@@ -1,5 +1,6 @@
 import { ShieldCheck, UserCheck, Users } from "lucide-react";
 import type { StaffUser } from "@/types/staff.types";
+import { SummaryCard } from "@/components/shared/SummaryCard";
 
 // ── Component ──────────────────────────────────────────────────────
 
@@ -17,40 +18,32 @@ export function StaffOverviewCard({ users }: StaffOverviewCardProps) {
       label: "Super Admins",
       count: superAdminCount,
       icon: ShieldCheck,
-      color: "text-violet-500",
-      bg: "bg-violet-500/10",
+      tone: "primary" as const,
     },
     {
       label: "Supervisors",
       count: supervisorCount,
       icon: UserCheck,
-      color: "text-sky-500",
-      bg: "bg-sky-500/10",
+      tone: "info" as const,
     },
     {
       label: "Agents",
       count: agentCount,
       icon: Users,
-      color: "text-emerald-500",
-      bg: "bg-emerald-500/10",
+      tone: "success" as const,
     },
   ];
 
   return (
     <div className="grid grid-cols-3 gap-3">
-      {stats.map(({ label, count, icon: Icon, color, bg }) => (
-        <div
+      {stats.map(({ label, count, icon, tone }) => (
+        <SummaryCard
           key={label}
-          className="rounded-xl border bg-card p-4 flex flex-col items-center gap-2"
-        >
-          <div className={`h-10 w-10 rounded-xl ${bg} flex items-center justify-center`}>
-            <Icon className={`h-5 w-5 ${color}`} />
-          </div>
-          <p className={`text-2xl font-bold ${color}`}>{count}</p>
-          <p className="text-[11px] text-muted-foreground font-medium text-center uppercase tracking-wide">
-            {label}
-          </p>
-        </div>
+          icon={icon}
+          label={label}
+          value={count}
+          tone={tone}
+        />
       ))}
     </div>
   );

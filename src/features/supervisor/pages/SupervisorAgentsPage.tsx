@@ -17,15 +17,15 @@ import type { AgentPerformance } from "@/types/supervisor.types";
 // ── Helpers ────────────────────────────────────────────────────────
 
 function rateColor(rate: number): string {
-  if (rate >= 80) return "text-emerald-600";
-  if (rate >= 50) return "text-amber-500";
-  return "text-red-500";
+  if (rate >= 80) return "text-success";
+  if (rate >= 50) return "text-warning";
+  return "text-danger";
 }
 
 function rateBarColor(rate: number): string {
-  if (rate >= 80) return "bg-emerald-500";
-  if (rate >= 50) return "bg-amber-400";
-  return "bg-red-500";
+  if (rate >= 80) return "bg-success";
+  if (rate >= 50) return "bg-warning";
+  return "bg-danger";
 }
 
 // ── Portfolio Section ──────────────────────────────────────────────
@@ -39,13 +39,13 @@ function PortfolioSection({ portfolio }: { portfolio: AgentPerformance["portfoli
         <p className="text-[10px] text-muted-foreground leading-tight">Active Loans</p>
       </div>
       <div className="rounded-lg bg-muted/50 lg:bg-card lg:border p-2.5 space-y-1 text-center">
-        <AlertTriangle className="h-4 w-4 text-red-500 mx-auto" />
-        <p className="text-sm font-bold text-red-500">{portfolio.total_overdue_count}</p>
+        <AlertTriangle className="mx-auto h-4 w-4 text-danger" />
+        <p className="text-sm font-bold text-danger">{portfolio.total_overdue_count}</p>
         <p className="text-[10px] text-muted-foreground leading-tight">Overdue Loans</p>
       </div>
       <div className="rounded-lg bg-muted/50 lg:bg-card lg:border p-2.5 space-y-1 text-center">
-        <TrendingUp className="h-4 w-4 text-orange-500 mx-auto" />
-        <p className="text-xs font-bold text-orange-500 truncate">{fmt(portfolio.total_overdue_amount)}</p>
+        <TrendingUp className="mx-auto h-4 w-4 text-warning" />
+        <p className="text-xs font-bold text-warning truncate">{fmt(portfolio.total_overdue_amount)}</p>
         <p className="text-[10px] text-muted-foreground leading-tight">Overdue Amt</p>
       </div>
     </div>
@@ -106,10 +106,10 @@ function AgentCard({ agent }: { agent: AgentPerformance }) {
                 {today.expected_count} schedule{today.expected_count !== 1 ? "s" : ""}
               </p>
             </div>
-            <div className="rounded-lg bg-emerald-500/10 p-3 space-y-0.5">
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-emerald-600">Collected</p>
-              <p className="text-base font-bold text-emerald-600">{fmt(today.collected_amount)}</p>
-              <p className="text-[11px] text-emerald-600/70">
+            <div className="rounded-lg bg-success/10 p-3 space-y-0.5">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-success">Collected</p>
+              <p className="text-base font-bold text-success">{fmt(today.collected_amount)}</p>
+              <p className="text-[11px] text-success/70">
                 {today.collected_count} payment{today.collected_count !== 1 ? "s" : ""}
               </p>
             </div>
@@ -176,10 +176,10 @@ function AgentCard({ agent }: { agent: AgentPerformance }) {
               {today.expected_count} schedule{today.expected_count !== 1 ? "s" : ""}
             </p>
           </div>
-          <div className="rounded-lg bg-emerald-500/10 p-3 space-y-0.5">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-emerald-600">Collected</p>
-            <p className="text-base font-bold text-emerald-600">{fmt(today.collected_amount)}</p>
-            <p className="text-[11px] text-emerald-600/70">
+          <div className="rounded-lg bg-success/10 p-3 space-y-0.5">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-success">Collected</p>
+            <p className="text-base font-bold text-success">{fmt(today.collected_amount)}</p>
+            <p className="text-[11px] text-success/70">
               {today.collected_count} payment{today.collected_count !== 1 ? "s" : ""}
             </p>
           </div>

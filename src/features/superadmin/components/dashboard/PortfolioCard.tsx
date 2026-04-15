@@ -50,7 +50,7 @@ export function PortfolioCard({ data, isLoading, isError }: PortfolioCardProps) 
           <BarChart2 className="h-4 w-4 text-primary" />
           <h3 className="text-sm font-semibold">Total Active Portfolio</h3>
         </div>
-        <span className="text-xs font-semibold text-emerald-500">
+        <span className="text-xs font-semibold text-success">
           {recoveryRate}% recovered
         </span>
       </div>
@@ -68,7 +68,7 @@ export function PortfolioCard({ data, isLoading, isError }: PortfolioCardProps) 
         </div>
         <div className="h-2.5 w-full rounded-full bg-muted overflow-hidden">
           <div
-            className="h-full rounded-full bg-emerald-500 transition-all duration-700"
+            className="h-full rounded-full bg-success transition-all duration-700"
             style={{ width: `${deployedPct}%` }}
           />
         </div>
@@ -77,7 +77,7 @@ export function PortfolioCard({ data, isLoading, isError }: PortfolioCardProps) 
       {/* Breakdown grid */}
       <div className="grid grid-cols-2 gap-3">
         <StatTile
-          icon={<TrendingUp className="h-3.5 w-3.5 text-emerald-500" />}
+          icon={<TrendingUp className="h-3.5 w-3.5 text-success" />}
           label="Received"
           value={formatCurrency(received)}
         />
@@ -86,15 +86,15 @@ export function PortfolioCard({ data, isLoading, isError }: PortfolioCardProps) 
           value={formatCurrency(outstanding)}
         />
         <StatTile
-          icon={<TrendingDown className="h-3.5 w-3.5 text-red-500" />}
+          icon={<TrendingDown className="h-3.5 w-3.5 text-danger" />}
           label="Overdue"
           value={formatCurrency(overdue)}
-          valueClass="text-red-500"
+          valueClass="text-danger"
         />
         <StatTile
           label="Current"
           value={formatCurrency(current)}
-          valueClass="text-sky-500"
+          valueClass="text-info"
         />
       </div>
 

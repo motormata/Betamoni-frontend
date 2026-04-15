@@ -1,14 +1,17 @@
 import { useState } from "react";
 import { useGetRolesQuery, useCreateUserMutation } from "@/api/endpoints/staffApi";
-import { useGetMarketsQuery } from "@/api/endpoints/dashboardApi";
-import { UserPlus, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { useGetClusterMarketsQuery } from "@/api/endpoints/clustersApi";
+import { UserPlus, Loader2, AlertCircle } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { getApiErrorMessage } from "@/lib/api-errors";
 
 // ── Component ──────────────────────────────────────────────────────
 
 export function CreateUserForm({ onSuccess }: { onSuccess?: () => void }) {
   const { data: rolesRes, isLoading: rolesLoading } = useGetRolesQuery();
-  const { data: marketsRes, isLoading: marketsLoading } = useGetMarketsQuery();
+  const { data: marketsRes, isLoading: marketsLoading } = useGetClusterMarketsQuery();
   const [createUser, { isLoading: isCreating }] = useCreateUserMutation();
+  const { toast } = useToast();
 
   const roles = rolesRes?.data ?? [];
   const markets = marketsRes?.data ?? [];
@@ -22,16 +25,13 @@ export function CreateUserForm({ onSuccess }: { onSuccess?: () => void }) {
   const [marketId, setMarketId] = useState("");
 
   // Feedback
-  const [result, setResult] = useState<{
-    type: "success" | "error";
-    message: string;
-  } | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const isFormValid = name && email && phone && password && roleId && marketId;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setResult(null);
+    setErrorMessage(null);
 
     try {
       const res = await createUser({
@@ -43,9 +43,9 @@ export function CreateUserForm({ onSuccess }: { onSuccess?: () => void }) {
         market_id: marketId,
       }).unwrap();
 
-      setResult({
-        type: "success",
-        message: `User "${res.data?.name ?? name}" created successfully!`,
+      toast({
+        title: "User created",
+        description: `${res.data?.name ?? name} can now sign in with the assigned role.`,
       });
 
       // Reset form
@@ -56,18 +56,10 @@ export function CreateUserForm({ onSuccess }: { onSuccess?: () => void }) {
       setRoleId("");
       setMarketId("");
       onSuccess?.();
-    } catch (err: any) {
-      const errorData = err?.data;
-      // Handle validation errors from Laravel
-      if (errorData?.errors) {
-        const messages = Object.values(errorData.errors).flat().join(", ");
-        setResult({ type: "error", message: messages });
-      } else {
-        setResult({
-          type: "error",
-          message: errorData?.message || "Failed to create user. Please try again.",
-        });
-      }
+    } catch (error) {
+      setErrorMessage(
+        getApiErrorMessage(error, "Failed to create user. Please try again."),
+      );
     }
   }
 
@@ -76,20 +68,10 @@ export function CreateUserForm({ onSuccess }: { onSuccess?: () => void }) {
       <p className="text-sm font-semibold">Create New User</p>
 
       {/* Result Banner */}
-      {result && (
-        <div
-          className={`flex items-start gap-3 rounded-lg border p-4 text-sm ${
-            result.type === "success"
-              ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
-              : "bg-red-500/10 border-red-500/30 text-red-600 dark:text-red-400"
-          }`}
-        >
-          {result.type === "success" ? (
-            <CheckCircle2 className="h-5 w-5 shrink-0 mt-0.5" />
-          ) : (
-            <AlertCircle className="h-5 w-5 shrink-0 mt-0.5" />
-          )}
-          <p>{result.message}</p>
+      {errorMessage && (
+        <div className="flex items-start gap-3 rounded-lg border border-danger/30 bg-danger/10 p-4 text-sm text-danger">
+          <AlertCircle className="h-5 w-5 shrink-0 mt-0.5" />
+          <p>{errorMessage}</p>
         </div>
       )}
 
@@ -216,7 +198,7 @@ function FieldGroup({
     <div className="space-y-1.5">
       <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
         {label}
-        {required && <span className="text-red-500 ml-0.5">*</span>}
+        {required && <span className="ml-0.5 text-danger">*</span>}
       </label>
       {children}
     </div>

@@ -23,7 +23,18 @@ export interface TodayRepaymentsData {
   total_collected: number;
   outstanding: number;
   collection_rate: number;
-  pending_list: unknown[];
+  pending_list: TodayRepaymentPendingItem[];
+}
+
+export interface TodayRepaymentPendingItem {
+  schedule_id: string;
+  loan_number: string;
+  borrower_name: string;
+  borrower_phone: string;
+  expected_amount: number | string;
+  amount_paid: number | string;
+  remaining: number | string;
+  location: string | null;
 }
 
 export interface TodayRepaymentsResponse {

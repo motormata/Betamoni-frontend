@@ -1,7 +1,9 @@
 import { useNavigate } from "react-router-dom";
 import { useLogoutMutation } from "@/api/endpoints/authApi";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
+import { getApiErrorMessage } from "@/lib/api-errors";
 
 interface LogoutButtonProps {
   /** Show as icon-only button */
@@ -15,13 +17,25 @@ export function LogoutButton({
   className,
 }: LogoutButtonProps) {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [logout, { isLoading }] = useLogoutMutation();
 
   const handleLogout = async () => {
     try {
       await logout().unwrap();
-    } catch {
-      // clearCredentials is dispatched optimistically by authApi
+      toast({
+        title: "Signed out",
+        description: "Your session has been closed on this device.",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Signed out locally",
+        description: getApiErrorMessage(
+          error,
+          "We could not confirm logout with the server, but your local session was cleared.",
+        ),
+      });
     } finally {
       navigate("/login", { replace: true });
     }

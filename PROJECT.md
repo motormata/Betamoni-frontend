@@ -15,7 +15,7 @@
 
 ### Core Framework
 
-- **React 18** with TypeScript
+- **React 19** with TypeScript
 - **Vite** - Build tool and dev server
 - **React Router v7** - Navigation (declarative mode)
 
@@ -191,28 +191,29 @@ betamoni-admin/
 
 All visual decisions live in CSS variables, mapped to Tailwind utilities.
 
-**Location:** `src/styles/index.css`
+**Location:** `src/index.css`
 
 ### Color System (HSL Format)
 
 ```css
-/* Primary - Green (prosperity/success theme) */
---primary: 142 71% 45%;
---primary-foreground: 144 61% 97%;
+/* Backgrounds - warm operational neutrals */
+--background: 42 32% 95%;
+--card: 40 43% 98%;
+--foreground: 154 20% 14%;
 
-/* Secondary - Blue (trust/security) */
---secondary: 217 91% 60%;
---secondary-foreground: 222 47% 11%;
+/* Brand / action */
+--primary: 148 63% 25%;
+--primary-foreground: 48 67% 98%;
 
-/* Destructive - Error states */
---destructive: 0 84% 60%;
---destructive-foreground: 0 0% 98%;
+/* Supporting trust / information */
+--secondary: 184 57% 30%;
+--secondary-foreground: 180 20% 98%;
+--info: 186 58% 34%;
 
-/* Neutral colors */
---background: 0 0% 100%;
---foreground: 240 10% 3.9%;
---muted: 240 4.8% 95.9%;
---muted-foreground: 240 3.8% 46.1%;
+/* Semantic statuses */
+--success: 148 51% 34%;
+--warning: 38 77% 42%;
+--danger: 0 64% 43%;
 ```
 
 ### Naming Convention
@@ -405,7 +406,8 @@ function useAuth() {
    - Connected to live dev backend (`api.dev.betamoni.com.ng`)
    - Completed full login/logout flow with JWT management
    - Persistent login via `AuthProvider` and manual refetch validation
-   - Automatic token refresh logic for 401 interceptors
+  - Automatic token refresh logic for 401 interceptors
+  - API cache reset on logout / credential clear to prevent cross-user stale data
 
 8. **Dashboard Overview**
    - Consolidated API Layer: 2 queries (`getDashboardSummary` and `getHistorical`) replace 5+ individual calls.
@@ -598,7 +600,8 @@ Authentication endpoints are fully wired up to the live development backend:
 
 - Dev API: `https://api.dev.betamoni.com.ng/api`
 - All responses use an envelope structure: `{ success, message, data, errors }`
-- Token refresh is **not** implemented (backend handles token lifetime natively). A 401 error results in an immediate clear of credentials.
+- Token refresh is implemented through `POST /api/refresh` in `baseApi.ts`.
+- If refresh fails, credentials are cleared and RTK Query cache is reset to avoid stale cross-session data.
 
 ### Adding New Endpoints
 

@@ -11,6 +11,8 @@ import type { AgentLoan } from "@/types/agent.types";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { LoadingState, ErrorState } from "@/components/shared/FeedbackStates";
 import { formatCurrency } from "@/lib/formatters";
+import { useToast } from "@/hooks/use-toast";
+import { getApiErrorMessage } from "@/lib/api-errors";
 
 // ── Repayment Schedule Calculator ─────────────────────────────────
 
@@ -123,8 +125,8 @@ export function AgentLoanDetailPage() {
             {/* Financial summary row */}
             <div className="grid grid-cols-3 gap-2">
               <FinanceTile label="Total" value={formatCurrency(schedule.totalAmount)} color="text-foreground" />
-              <FinanceTile label="Paid" value={formatCurrency(schedule.amountPaid)} color="text-emerald-600" />
-              <FinanceTile label="Balance" value={formatCurrency(schedule.balance)} color={schedule.balance > 0 ? "text-amber-600" : "text-emerald-600"} />
+              <FinanceTile label="Paid" value={formatCurrency(schedule.amountPaid)} color="text-success" />
+              <FinanceTile label="Balance" value={formatCurrency(schedule.balance)} color={schedule.balance > 0 ? "text-warning" : "text-success"} />
             </div>
 
             {/* Progress bar */}
@@ -272,9 +274,9 @@ function RepaymentScheduleCard({ schedule }: { schedule: ScheduleInfo }) {
       {/* Status line */}
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
         {schedule.isComplete ? (
-          <><CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> Loan fully repaid</>
+          <><CheckCircle2 className="h-3.5 w-3.5 text-success" /> Loan fully repaid</>
         ) : remaining > 0 ? (
-          <><CircleDot className="h-3.5 w-3.5 text-amber-500" /> {remaining} {remaining === 1 ? "repayment" : "repayments"} remaining</>
+          <><CircleDot className="h-3.5 w-3.5 text-warning" /> {remaining} {remaining === 1 ? "repayment" : "repayments"} remaining</>
         ) : (
           <><AlertCircle className="h-3.5 w-3.5 text-destructive" /> Overdue</>
         )}
@@ -302,14 +304,14 @@ function PaymentHistoryCard({ payments }: { payments: NonNullable<AgentLoan["pay
           <li key={p.id} className="flex items-center justify-between gap-3 px-4 py-3">
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <p className="text-sm font-semibold text-emerald-600">
+                <p className="text-sm font-semibold text-success">
                   +{formatCurrency(p.amount)}
                 </p>
                 <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
                   {methodLabel[p.payment_method] ?? p.payment_method}
                 </span>
                 {p.is_verified && (
-                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                  <CheckCircle2 className="h-3.5 w-3.5 text-success shrink-0" />
                 )}
               </div>
               {p.receipt_number && (
@@ -340,6 +342,7 @@ function InlinePaymentForm({
   onSuccess: () => void;
 }) {
   const [createPayment, { isLoading, isError, error }] = useCreatePaymentMutation();
+  const { toast } = useToast();
 
   const [amount, setAmount] = useState(String(Math.round(defaultAmount)));
   const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split("T")[0]);
@@ -349,14 +352,22 @@ function InlinePaymentForm({
     e.preventDefault();
     if (!paymentMethod) return;
 
-    const result = await createPayment({
-      loan_id: loanId,
-      amount: Number(amount),
-      payment_date: paymentDate,
-      payment_method: paymentMethod as PaymentMethod,
-    });
+    try {
+      await createPayment({
+        loan_id: loanId,
+        amount: Number(amount),
+        payment_date: paymentDate,
+        payment_method: paymentMethod as PaymentMethod,
+      }).unwrap();
 
-    if ("data" in result) onSuccess();
+      toast({
+        title: "Payment recorded",
+        description: `${formatCurrency(Number(amount))} has been added to this loan.`,
+      });
+      onSuccess();
+    } catch {
+      // Inline error text keeps this correction local to the form.
+    }
   }
 
   return (
@@ -411,7 +422,7 @@ function InlinePaymentForm({
 
       {isError && (
         <p className="text-xs text-destructive">
-          {(error as any)?.data?.message ?? "Failed to record payment"}
+          {getApiErrorMessage(error, "Failed to record payment")}
         </p>
       )}
 

@@ -4,46 +4,48 @@
 
 @layer base {
   :root {
-    /* Colors - Using HSL format for Tailwind v3 */
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    
-    /* Primary - Green for Nigerian fintech */
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
-    
-    /* Secondary - Blue for trust */
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    
-    /* Destructive - Error states */
-    --destructive: 0 84.2% 60.2%;
+    /* Warm operational fintech palette */
+    --background: 42 32% 95%;
+    --foreground: 154 20% 14%;
+    --card: 40 43% 98%;
+    --card-foreground: 154 20% 14%;
+    --popover: 40 43% 98%;
+    --popover-foreground: 154 20% 14%;
+
+    --primary: 148 63% 25%;
+    --primary-foreground: 48 67% 98%;
+
+    --secondary: 184 57% 30%;
+    --secondary-foreground: 180 20% 98%;
+
+    --destructive: 0 64% 43%;
     --destructive-foreground: 0 0% 98%;
-    
-    /* Muted - Subtle backgrounds */
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    
-    /* Accent - Highlights */
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
-    
-    /* Borders and inputs */
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
-    
-    /* Border radius */
+
+    --muted: 40 20% 90%;
+    --muted-foreground: 155 10% 36%;
+
+    --accent: 43 42% 90%;
+    --accent-foreground: 154 20% 14%;
+
+    --success: 148 51% 34%;
+    --success-foreground: 48 67% 98%;
+    --warning: 38 77% 42%;
+    --warning-foreground: 48 67% 98%;
+    --info: 186 58% 34%;
+    --info-foreground: 180 20% 98%;
+    --danger: 0 64% 43%;
+    --danger-foreground: 0 0% 98%;
+
+    --border: 38 18% 82%;
+    --input: 38 18% 82%;
+    --ring: 148 63% 25%;
+
     --radius: 0.5rem;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
+    --chart-1: 148 51% 34%;
+    --chart-2: 186 58% 34%;
+    --chart-3: 38 77% 42%;
+    --chart-4: 0 64% 43%;
+    --chart-5: 154 20% 24%;
   }
   
   * {
@@ -53,38 +55,59 @@
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
+    background-image:
+      radial-gradient(circle at top left, hsl(var(--accent) / 0.65), transparent 28%),
+      radial-gradient(circle at bottom right, hsl(var(--secondary) / 0.08), transparent 26%);
+    min-height: 100vh;
   }
+
+  @media (max-width: 767px) {
+    input,
+    select,
+    textarea {
+      font-size: 16px;
+    }
+  }
+
   .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
+    --background: 154 18% 9%;
+    --foreground: 48 38% 95%;
+    --card: 154 17% 12%;
+    --card-foreground: 48 38% 95%;
+    --popover: 154 17% 12%;
+    --popover-foreground: 48 38% 95%;
+    --primary: 148 47% 42%;
+    --primary-foreground: 154 30% 10%;
+    --secondary: 186 46% 42%;
+    --secondary-foreground: 180 20% 98%;
+    --muted: 154 13% 18%;
+    --muted-foreground: 40 12% 71%;
+    --accent: 154 13% 18%;
+    --accent-foreground: 48 38% 95%;
+    --destructive: 0 68% 55%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    --success: 148 47% 46%;
+    --success-foreground: 154 30% 10%;
+    --warning: 38 80% 56%;
+    --warning-foreground: 32 90% 12%;
+    --info: 186 54% 50%;
+    --info-foreground: 180 20% 98%;
+    --danger: 0 68% 55%;
+    --danger-foreground: 0 0% 98%;
+    --border: 154 12% 20%;
+    --input: 154 12% 20%;
+    --ring: 148 47% 42%;
+    --chart-1: 148 47% 46%;
+    --chart-2: 186 54% 50%;
+    --chart-3: 38 80% 56%;
+    --chart-4: 0 68% 55%;
+    --chart-5: 48 38% 95%;
   }
 }
 
 @layer components {
   .input-field {
-    @apply h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm
+    @apply h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-base shadow-sm md:text-sm
            focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring
            disabled:opacity-50 disabled:cursor-not-allowed;
   }

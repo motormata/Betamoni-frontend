@@ -60,7 +60,7 @@ export function DashboardFilters({
         )}
       </div>
 
-      <span className="text-xs text-emerald-500 font-medium whitespace-nowrap">
+      <span className="whitespace-nowrap text-xs font-medium text-info">
         Updated just now
       </span>
     </div>

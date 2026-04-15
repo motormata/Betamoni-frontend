@@ -1,15 +1,15 @@
 // ── Status Badge ───────────────────────────────────────────────────
 
 const STATUS_STYLES: Record<string, string> = {
-  active:    "bg-emerald-500/10 text-emerald-600 ring-emerald-500/20",
-  approved:  "bg-emerald-500/10 text-emerald-600 ring-emerald-500/20",
-  pending:   "bg-amber-500/10   text-amber-600   ring-amber-500/20",
-  rejected:  "bg-red-500/10     text-red-500      ring-red-500/20",
-  defaulted: "bg-red-500/10     text-red-500      ring-red-500/20",
-  completed: "bg-sky-500/10     text-sky-600      ring-sky-500/20",
-  disbursed: "bg-violet-500/10  text-violet-600   ring-violet-500/20",
-  paid:      "bg-emerald-500/10 text-emerald-600  ring-emerald-500/20",
-  overdue:   "bg-red-500/10     text-red-500      ring-red-500/20",
+  active: "bg-success/10 text-success ring-success/20",
+  approved: "bg-success/10 text-success ring-success/20",
+  pending: "bg-warning/10 text-warning ring-warning/20",
+  rejected: "bg-danger/10 text-danger ring-danger/20",
+  defaulted: "bg-danger/10 text-danger ring-danger/20",
+  completed: "bg-info/10 text-info ring-info/20",
+  disbursed: "bg-info/10 text-info ring-info/20",
+  paid: "bg-success/10 text-success ring-success/20",
+  overdue: "bg-danger/10 text-danger ring-danger/20",
 };
 
 const DEFAULT_STYLE = "bg-muted text-muted-foreground ring-border";

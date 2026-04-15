@@ -3,11 +3,11 @@ import { motion } from "framer-motion";
 
 export function LoginPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 via-white to-emerald-50 p-4 relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-card to-accent/60 p-4 relative overflow-hidden">
       {/* Background decoration */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 rounded-full bg-emerald-100/50 blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 rounded-full bg-emerald-100/30 blur-3xl" />
+        <div className="absolute -top-40 -right-40 h-80 w-80 rounded-full bg-secondary/15 blur-3xl" />
+        <div className="absolute -bottom-40 -left-40 h-80 w-80 rounded-full bg-primary/15 blur-3xl" />
       </div>
 
       <div className="w-full max-w-md relative z-10">
@@ -19,11 +19,11 @@ export function LoginPage() {
           transition={{ duration: 0.5 }}
         >
           {/* Logo mark */}
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-emerald-600 mb-4 shadow-lg shadow-emerald-200">
-            <span className="text-2xl font-bold text-white">B</span>
+          <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-primary mb-4 shadow-lg shadow-primary/15">
+            <span className="text-2xl font-bold text-primary-foreground">B</span>
           </div>
 
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900 mb-1">
+          <h1 className="mb-1 text-3xl font-bold tracking-tight text-foreground">
             BetaMoni
           </h1>
           <p className="text-muted-foreground text-sm">Admin Dashboard</p>

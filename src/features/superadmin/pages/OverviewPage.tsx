@@ -1,9 +1,9 @@
 import { useState, useMemo } from "react";
 import {
-  useGetMarketsQuery,
   useGetDashboardSummaryQuery,
   useGetHistoricalQuery,
 } from "@/api/endpoints/dashboardApi";
+import { useGetClusterMarketsQuery } from "@/api/endpoints/clustersApi";
 import { DashboardFilters } from "../components/dashboard/DashboardFilters";
 import { KpiCards } from "../components/dashboard/KpiCards";
 import { CashPositionCard } from "../components/dashboard/CashPositionCard";
@@ -47,7 +47,7 @@ export function OverviewPage() {
   });
   const [customTo, setCustomTo] = useState(today);
 
-  const { data: marketsRes, isLoading: marketsLoading } = useGetMarketsQuery();
+  const { data: marketsRes, isLoading: marketsLoading } = useGetClusterMarketsQuery();
   const markets = marketsRes?.data ?? [];
 
   const dateRange = useMemo(() => {
@@ -101,6 +101,7 @@ export function OverviewPage() {
       <CollectionsChart
         data={historical.data?.data}
         isLoading={historical.isLoading}
+        isFetching={historical.isFetching}
         isError={historical.isError}
         timeRange={timeRange}
         onTimeRangeChange={setTimeRange}

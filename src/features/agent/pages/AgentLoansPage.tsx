@@ -14,6 +14,8 @@ import { LoadingState, ErrorState, EmptyState } from "@/components/shared/Feedba
 import { CopyButton } from "@/components/shared/CopyButton";
 import { formatCurrency } from "@/lib/formatters";
 import type { LoanProduct } from "@/types/product.types";
+import { useToast } from "@/hooks/use-toast";
+import { getApiErrorMessage } from "@/lib/api-errors";
 
 // ── Agent Loans Page ───────────────────────────────────────────────
 
@@ -110,6 +112,7 @@ function CreateLoanForm({ onSuccess }: { onSuccess: () => void }) {
   const [createLoan, { isLoading, isError, error }] = useCreateAgentLoanMutation();
   const { data: borrowersRes, isLoading: borrowersLoading } = useGetAgentBorrowersQuery();
   const { data: productsRes, isLoading: productsLoading } = useGetAgentProductsQuery();
+  const { toast } = useToast();
 
   const borrowers = borrowersRes?.data?.data ?? [];
   const products = productsRes?.data ?? [];
@@ -126,17 +129,23 @@ function CreateLoanForm({ onSuccess }: { onSuccess: () => void }) {
     e.preventDefault();
     if (!borrowerId || !productId) return;
 
-    const result = await createLoan({
-      borrower_id: borrowerId,
-      loan_product_id: productId,
-      quantity: Number(quantity),
-    });
+    try {
+      await createLoan({
+        borrower_id: borrowerId,
+        loan_product_id: productId,
+        quantity: Number(quantity),
+      }).unwrap();
 
-    if ("data" in result) {
+      toast({
+        title: "Loan created",
+        description: `${selectedProduct?.name ?? "Loan"} has been issued successfully.`,
+      });
       setBorrowerId("");
       setProductId("");
       setQuantity("1");
       onSuccess();
+    } catch {
+      // Inline error text keeps the fix in context.
     }
   }
 
@@ -242,7 +251,7 @@ function CreateLoanForm({ onSuccess }: { onSuccess: () => void }) {
 
       {isError && (
         <p className="text-xs text-destructive">
-          {(error as any)?.data?.message ?? "Failed to create loan"}
+          {getApiErrorMessage(error, "Failed to create loan")}
         </p>
       )}
 

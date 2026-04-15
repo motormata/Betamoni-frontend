@@ -1,8 +1,10 @@
 import { useState } from "react";
-import { X, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { X, Loader2, AlertCircle } from "lucide-react";
 import { useAssignMarketMutation } from "@/api/endpoints/staffApi";
-import { useGetMarketsQuery } from "@/api/endpoints/dashboardApi";
+import { useGetClusterMarketsQuery } from "@/api/endpoints/clustersApi";
 import type { StaffUser } from "@/types/staff.types";
+import { useToast } from "@/hooks/use-toast";
+import { getApiErrorMessage } from "@/lib/api-errors";
 
 // ── Props ──────────────────────────────────────────────────────────
 
@@ -14,20 +16,18 @@ interface MoveAgentModalProps {
 // ── Component ──────────────────────────────────────────────────────
 
 export function MoveAgentModal({ agent, onClose }: MoveAgentModalProps) {
-  const { data: marketsRes, isLoading: marketsLoading } = useGetMarketsQuery();
+  const { data: marketsRes, isLoading: marketsLoading } = useGetClusterMarketsQuery();
   const [assignMarket, { isLoading }] = useAssignMarketMutation();
+  const { toast } = useToast();
 
   const markets = marketsRes?.data ?? [];
   const [selectedMarketId, setSelectedMarketId] = useState<string>("");
-  const [result, setResult] = useState<{
-    type: "success" | "error";
-    message: string;
-  } | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!selectedMarketId) return;
-    setResult(null);
+    setErrorMessage(null);
 
     try {
       await assignMarket({
@@ -36,15 +36,15 @@ export function MoveAgentModal({ agent, onClose }: MoveAgentModalProps) {
       }).unwrap();
 
       const newMarket = markets.find((m) => String(m.id) === selectedMarketId);
-      setResult({
-        type: "success",
-        message: `${agent.name} has been moved to ${newMarket?.name ?? "selected market"}.`,
+      toast({
+        title: "Agent moved",
+        description: `${agent.name} has been assigned to ${newMarket?.name ?? "the selected market"}.`,
       });
-      setSelectedMarketId("");
-    } catch (err: any) {
-      const msg =
-        err?.data?.message ?? "Failed to assign market. Please try again.";
-      setResult({ type: "error", message: msg });
+      onClose();
+    } catch (error) {
+      setErrorMessage(
+        getApiErrorMessage(error, "Failed to assign market. Please try again."),
+      );
     }
   }
 
@@ -75,28 +75,18 @@ export function MoveAgentModal({ agent, onClose }: MoveAgentModalProps) {
         {/* Body */}
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           {/* Result Banner */}
-          {result && (
-            <div
-              className={`flex items-start gap-3 rounded-lg border p-3 text-sm ${
-                result.type === "success"
-                  ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
-                  : "bg-red-500/10 border-red-500/30 text-red-600 dark:text-red-400"
-              }`}
-            >
-              {result.type === "success" ? (
-                <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5" />
-              ) : (
-                <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-              )}
-              <p>{result.message}</p>
+          {errorMessage && (
+            <div className="flex items-start gap-3 rounded-lg border border-danger/30 bg-danger/10 p-3 text-sm text-danger">
+              <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+              <p>{errorMessage}</p>
             </div>
           )}
 
           {/* Agent info */}
           <div className="rounded-lg bg-muted/30 border px-4 py-3 flex items-center gap-3">
             {/* Avatar */}
-            <div className="h-9 w-9 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0">
-              <span className="text-sm font-bold text-emerald-600">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-success/15">
+              <span className="text-sm font-bold text-success">
                 {agent.name.charAt(0).toUpperCase()}
               </span>
             </div>
@@ -122,7 +112,7 @@ export function MoveAgentModal({ agent, onClose }: MoveAgentModalProps) {
           {/* New market select */}
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-              Move To Market <span className="text-red-500">*</span>
+              Move To Market <span className="text-danger">*</span>
             </label>
             <select
               value={selectedMarketId}

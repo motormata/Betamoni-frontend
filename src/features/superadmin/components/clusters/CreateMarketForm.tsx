@@ -1,11 +1,14 @@
 import { useState } from "react";
 import { useCreateMarketMutation, useGetRegionsQuery } from "@/api/endpoints/clustersApi";
+import { useToast } from "@/hooks/use-toast";
+import { getApiErrorMessage } from "@/lib/api-errors";
 
 // ── Create Market Form ─────────────────────────────────────────────
 
 export function CreateMarketForm({ onSuccess }: { onSuccess?: () => void }) {
   const [createMarket, { isLoading, isError, error }] = useCreateMarketMutation();
   const { data: regionsRes, isLoading: regionsLoading } = useGetRegionsQuery();
+  const { toast } = useToast();
   const regions = regionsRes?.data ?? [];
 
   const [regionId, setRegionId] = useState("");
@@ -16,19 +19,25 @@ export function CreateMarketForm({ onSuccess }: { onSuccess?: () => void }) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    const result = await createMarket({
-      region_id: regionId,
-      name: name.trim(),
-      code: code.trim().toUpperCase(),
-      address: address.trim(),
-    });
+    try {
+      await createMarket({
+        region_id: regionId,
+        name: name.trim(),
+        code: code.trim().toUpperCase(),
+        address: address.trim(),
+      }).unwrap();
 
-    if ("data" in result) {
+      toast({
+        title: "Market created",
+        description: `${name.trim()} is ready for staffing and borrower assignments.`,
+      });
       setRegionId("");
       setName("");
       setCode("");
       setAddress("");
       onSuccess?.();
+    } catch {
+      // Inline error text handles recoverable form failures.
     }
   }
 
@@ -97,7 +106,7 @@ export function CreateMarketForm({ onSuccess }: { onSuccess?: () => void }) {
 
       {isError && (
         <p className="text-xs text-destructive">
-          {(error as any)?.data?.message ?? "Failed to create market"}
+          {getApiErrorMessage(error, "Failed to create market")}
         </p>
       )}
 

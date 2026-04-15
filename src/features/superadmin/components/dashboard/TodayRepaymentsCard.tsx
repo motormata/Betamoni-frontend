@@ -20,10 +20,10 @@ export function TodayRepaymentsCard({
   // Color based on rate
   const rateColor =
     collectionRate >= 80
-      ? "text-emerald-500"
+      ? "text-success"
       : collectionRate >= 50
-        ? "text-amber-500"
-        : "text-red-500";
+        ? "text-warning"
+        : "text-danger";
 
   if (isLoading) {
     return (
@@ -65,12 +65,12 @@ export function TodayRepaymentsCard({
       {/* Stat Grid */}
       <div className="grid grid-cols-2 gap-3">
         <StatBox
-          icon={<Clock className="h-3.5 w-3.5 text-amber-500" />}
+          icon={<Clock className="h-3.5 w-3.5 text-warning" />}
           label="Pending"
           value={String(data?.pending_count ?? 0)}
         />
         <StatBox
-          icon={<CircleCheck className="h-3.5 w-3.5 text-emerald-500" />}
+          icon={<CircleCheck className="h-3.5 w-3.5 text-success" />}
           label="Paid"
           value={String(data?.paid_count ?? 0)}
         />
@@ -79,7 +79,7 @@ export function TodayRepaymentsCard({
           value={formatCurrency(data?.total_expected ?? 0)}
         />
         <StatBox
-          icon={<CircleAlert className="h-3.5 w-3.5 text-red-500" />}
+          icon={<CircleAlert className="h-3.5 w-3.5 text-danger" />}
           label="Outstanding"
           value={formatCurrency(data?.outstanding ?? 0)}
         />
@@ -96,7 +96,13 @@ export function TodayRepaymentsCard({
         </div>
         <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
           <div
-            className="h-full rounded-full bg-emerald-500 transition-all duration-500"
+            className={`h-full rounded-full transition-all duration-500 ${
+              collectionRate >= 80
+                ? "bg-success"
+                : collectionRate >= 50
+                  ? "bg-warning"
+                  : "bg-danger"
+            }`}
             style={{ width: `${Math.min(collectionRate, 100)}%` }}
           />
         </div>

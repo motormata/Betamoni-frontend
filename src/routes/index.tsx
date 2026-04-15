@@ -79,45 +79,85 @@ export const router = createBrowserRouter([
       // Superadmin finance page
       {
         path: "finance",
-        element: <LoansPage />,
+        element: (
+          <ProtectedRoute allowedRoles={["super-admin"]}>
+            <LoansPage />
+          </ProtectedRoute>
+        ),
       },
       // Superadmin loan deals / products
       {
         path: "products",
-        element: <ProductsPage />,
+        element: (
+          <ProtectedRoute allowedRoles={["super-admin"]}>
+            <ProductsPage />
+          </ProtectedRoute>
+        ),
       },
       // Agent + Supervisor loans  (superadmin redirects to /finance)
       {
         path: "loans",
-        element: <RoleBasedLoansPage />,
+        element: (
+          <ProtectedRoute allowedRoles={["agent", "supervisor"]}>
+            <RoleBasedLoansPage />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "loans/:id",
-        element: <RoleBasedLoanDetail />,
+        element: (
+          <ProtectedRoute allowedRoles={["agent", "supervisor"]}>
+            <RoleBasedLoanDetail />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "borrowers",
-        element: <AgentBorrowersPage />,
+        element: (
+          <ProtectedRoute allowedRoles={["agent"]}>
+            <AgentBorrowersPage />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "borrowers/:id",
-        element: <AgentBorrowerDetailPage />,
+        element: (
+          <ProtectedRoute allowedRoles={["agent"]}>
+            <AgentBorrowerDetailPage />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "payments",
-        element: <AgentPaymentsPage />,
+        element: (
+          <ProtectedRoute allowedRoles={["agent"]}>
+            <AgentPaymentsPage />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "agents",
-        element: <SupervisorAgentsPage />,
+        element: (
+          <ProtectedRoute allowedRoles={["supervisor"]}>
+            <SupervisorAgentsPage />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "clusters",
-        element: <ClustersPage />,
+        element: (
+          <ProtectedRoute allowedRoles={["super-admin"]}>
+            <ClustersPage />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "staff",
-        element: <StaffPage />,
+        element: (
+          <ProtectedRoute allowedRoles={["super-admin"]}>
+            <StaffPage />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "settings",

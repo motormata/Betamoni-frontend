@@ -21,18 +21,20 @@ import {
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { LoadingState, ErrorState } from "@/components/shared/FeedbackStates";
 import { DetailCard } from "@/components/shared/DetailCard";
-
-// ── Supervisor Loan Detail Page ────────────────────────────────────
+import { useToast } from "@/hooks/use-toast";
+import { getApiErrorMessage } from "@/lib/api-errors";
+import { formatCurrency } from "@/lib/formatters";
 
 export function SupervisorLoanDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { data: res, isLoading, isError } = useGetSupervisorLoanByIdQuery(id!, { skip: !id });
+  const { data: res, isLoading, isError } = useGetSupervisorLoanByIdQuery(id!, {
+    skip: !id,
+  });
   const loan = res?.data;
 
   return (
     <div className="p-4 lg:p-6 space-y-4">
-      {/* Back button */}
       <button
         type="button"
         onClick={() => navigate("/loans")}
@@ -47,7 +49,6 @@ export function SupervisorLoanDetailPage() {
 
       {loan && (
         <>
-          {/* Header Card */}
           <div className="rounded-xl border bg-card p-4 space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -55,9 +56,7 @@ export function SupervisorLoanDetailPage() {
                   <Banknote className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <p className="text-lg font-bold">
-                    ₦{Number(loan.principal_amount).toLocaleString()}
-                  </p>
+                  <p className="text-lg font-bold">{formatCurrency(loan.principal_amount)}</p>
                   <p className="text-xs text-muted-foreground font-mono">{loan.id}</p>
                 </div>
               </div>
@@ -65,7 +64,6 @@ export function SupervisorLoanDetailPage() {
             </div>
           </div>
 
-          {/* Borrower & Agent Info */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {loan.borrower && (
               <div className="rounded-xl border bg-card p-3">
@@ -95,7 +93,6 @@ export function SupervisorLoanDetailPage() {
             )}
           </div>
 
-          {/* Loan Details Grid */}
           <div className="grid grid-cols-2 gap-3">
             <DetailCard icon={Percent} label="Interest Rate" value={`${loan.interest_rate}%`} />
             <DetailCard icon={Calendar} label="Duration" value={`${loan.duration_days} days`} />
@@ -104,23 +101,27 @@ export function SupervisorLoanDetailPage() {
               <DetailCard icon={Banknote} label="Purpose" value={String(loan.purpose)} />
             )}
             {loan.collection_day && (
-              <DetailCard icon={Calendar} label="Collection Day" value={String(loan.collection_day)} />
+              <DetailCard
+                icon={Calendar}
+                label="Collection Day"
+                value={String(loan.collection_day)}
+              />
             )}
             {loan.created_at && (
               <DetailCard
                 icon={Calendar}
                 label="Created"
                 value={new Date(loan.created_at).toLocaleDateString("en-NG", {
-                  year: "numeric", month: "short", day: "numeric",
+                  year: "numeric",
+                  month: "short",
+                  day: "numeric",
                 })}
               />
             )}
           </div>
 
-          {/* ── Action Panel ─────────────────────────────────────── */}
           <LoanActions loanId={loan.id} status={loan.status} />
 
-          {/* Raw JSON */}
           <details className="rounded-xl border bg-card">
             <summary className="px-4 py-3 text-xs font-semibold text-muted-foreground cursor-pointer hover:text-foreground transition-colors">
               Raw Response
@@ -135,14 +136,11 @@ export function SupervisorLoanDetailPage() {
   );
 }
 
-// ── Loan Actions Panel ─────────────────────────────────────────────
-
 function LoanActions({ loanId, status }: { loanId: string; status: string }) {
   const normalized = status.toLowerCase();
   const isPending = normalized === "pending";
   const isApproved = normalized === "approved";
 
-  // Only show actions for actionable statuses
   if (!isPending && !isApproved) return null;
 
   return (
@@ -156,48 +154,69 @@ function LoanActions({ loanId, status }: { loanId: string; status: string }) {
             <RejectForm loanId={loanId} />
           </>
         )}
-        {isApproved && (
-          <DisburseForm loanId={loanId} />
-        )}
+        {isApproved && <DisburseForm loanId={loanId} />}
       </div>
     </div>
   );
 }
 
-// ── Approve Button ─────────────────────────────────────────────────
-
 function ApproveButton({ loanId }: { loanId: string }) {
-  const [approveLoan, { isLoading, isError, isSuccess }] = useApproveLoanMutation();
+  const [approveLoan, { isLoading }] = useApproveLoanMutation();
+  const { toast } = useToast();
+
+  async function handleApprove() {
+    try {
+      await approveLoan(loanId).unwrap();
+      toast({
+        title: "Loan approved",
+        description: "The loan is now ready for disbursement.",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Approval failed",
+        description: getApiErrorMessage(error, "Failed to approve. Try again."),
+      });
+    }
+  }
 
   return (
-    <div>
-      <button
-        type="button"
-        onClick={() => approveLoan(loanId)}
-        disabled={isLoading || isSuccess}
-        className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50 transition-colors"
-      >
-        <CheckCircle2 className="h-4 w-4" />
-        {isLoading ? "Approving…" : isSuccess ? "Approved ✓" : "Approve Loan"}
-      </button>
-      {isError && (
-        <p className="text-xs text-destructive mt-1">Failed to approve. Try again.</p>
-      )}
-    </div>
+    <button
+      type="button"
+      onClick={handleApprove}
+      disabled={isLoading}
+      className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-success px-4 py-2.5 text-sm font-semibold text-success-foreground hover:bg-success/90 disabled:opacity-50 transition-colors"
+    >
+      <CheckCircle2 className="h-4 w-4" />
+      {isLoading ? "Approving..." : "Approve Loan"}
+    </button>
   );
 }
-
-// ── Reject Form ────────────────────────────────────────────────────
 
 function RejectForm({ loanId }: { loanId: string }) {
   const [expanded, setExpanded] = useState(false);
   const [reason, setReason] = useState("");
-  const [rejectLoan, { isLoading, isError, isSuccess }] = useRejectLoanMutation();
+  const [rejectLoan, { isLoading }] = useRejectLoanMutation();
+  const { toast } = useToast();
 
   async function handleReject(e: React.FormEvent) {
     e.preventDefault();
-    if (reason.trim()) {
-      await rejectLoan({ id: loanId, rejection_reason: reason.trim() });
+    if (!reason.trim()) return;
+
+    try {
+      await rejectLoan({ id: loanId, rejection_reason: reason.trim() }).unwrap();
+      toast({
+        title: "Loan rejected",
+        description: "The rejection reason was saved successfully.",
+      });
+      setReason("");
+      setExpanded(false);
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Rejection failed",
+        description: getApiErrorMessage(error, "Failed to reject. Try again."),
+      });
     }
   }
 
@@ -206,7 +225,7 @@ function RejectForm({ loanId }: { loanId: string }) {
       <button
         type="button"
         onClick={() => setExpanded(true)}
-        className="w-full inline-flex items-center justify-center gap-2 rounded-lg border border-red-300 px-4 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+        className="w-full inline-flex items-center justify-center gap-2 rounded-lg border border-danger/30 px-4 py-2.5 text-sm font-semibold text-danger hover:bg-danger/10 transition-colors"
       >
         <XCircle className="h-4 w-4" />
         Reject Loan
@@ -215,9 +234,12 @@ function RejectForm({ loanId }: { loanId: string }) {
   }
 
   return (
-    <form onSubmit={handleReject} className="space-y-2 animate-in slide-in-from-top-1 duration-150">
+    <form
+      onSubmit={handleReject}
+      className="space-y-2 animate-in slide-in-from-top-1 duration-150"
+    >
       <textarea
-        placeholder="Enter rejection reason…"
+        placeholder="Enter rejection reason..."
         value={reason}
         onChange={(e) => setReason(e.target.value)}
         className="input-field h-20 resize-none py-2 text-sm"
@@ -227,10 +249,10 @@ function RejectForm({ loanId }: { loanId: string }) {
       <div className="flex items-center gap-2">
         <button
           type="submit"
-          disabled={isLoading || isSuccess || !reason.trim()}
-          className="flex-1 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50 transition-colors"
+          disabled={isLoading || !reason.trim()}
+          className="flex-1 rounded-lg bg-danger px-4 py-2 text-sm font-semibold text-danger-foreground hover:bg-danger/90 disabled:opacity-50 transition-colors"
         >
-          {isLoading ? "Rejecting…" : isSuccess ? "Rejected ✓" : "Confirm Reject"}
+          {isLoading ? "Rejecting..." : "Confirm Reject"}
         </button>
         <button
           type="button"
@@ -240,23 +262,31 @@ function RejectForm({ loanId }: { loanId: string }) {
           Cancel
         </button>
       </div>
-      {isError && (
-        <p className="text-xs text-destructive">Failed to reject. Try again.</p>
-      )}
     </form>
   );
 }
 
-// ── Disburse Form ──────────────────────────────────────────────────
-
 function DisburseForm({ loanId }: { loanId: string }) {
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
-  const [disburseLoan, { isLoading, isError, isSuccess }] = useDisburseLoanMutation();
+  const [disburseLoan, { isLoading }] = useDisburseLoanMutation();
+  const { toast } = useToast();
 
   async function handleDisburse(e: React.FormEvent) {
     e.preventDefault();
-    if (date) {
-      await disburseLoan({ id: loanId, disbursement_date: date });
+    if (!date) return;
+
+    try {
+      await disburseLoan({ id: loanId, disbursement_date: date }).unwrap();
+      toast({
+        title: "Loan disbursed",
+        description: `Disbursement was recorded for ${date}.`,
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Disbursement failed",
+        description: getApiErrorMessage(error, "Failed to disburse. Try again."),
+      });
     }
   }
 
@@ -274,15 +304,12 @@ function DisburseForm({ loanId }: { loanId: string }) {
       </div>
       <button
         type="submit"
-        disabled={isLoading || isSuccess}
-        className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-50 transition-colors"
+        disabled={isLoading}
+        className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-info px-4 py-2.5 text-sm font-semibold text-info-foreground hover:bg-info/90 disabled:opacity-50 transition-colors"
       >
         <Send className="h-4 w-4" />
-        {isLoading ? "Disbursing…" : isSuccess ? "Disbursed ✓" : "Disburse Loan"}
+        {isLoading ? "Disbursing..." : "Disburse Loan"}
       </button>
-      {isError && (
-        <p className="text-xs text-destructive mt-1">Failed to disburse. Try again.</p>
-      )}
     </form>
   );
 }

@@ -5,6 +5,8 @@ import { Pagination } from "@/components/shared/Pagination";
 import { LoadingState, EmptyState } from "@/components/shared/FeedbackStates";
 import { useAddCapitalMutation, useGetFinanceHistoryQuery } from "@/api/endpoints/financeApi";
 import { formatCurrency } from "@/lib/formatters";
+import { useToast } from "@/hooks/use-toast";
+import { getApiErrorMessage } from "@/lib/api-errors";
 
 // ── Finance Page ───────────────────────────────────────────────────
 
@@ -58,8 +60,8 @@ export function LoansPage() {
                   className="flex items-center justify-between gap-3 px-4 py-3"
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="h-8 w-8 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0">
-                      <DollarSign className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-success/10">
+                      <DollarSign className="h-4 w-4 text-success" />
                     </div>
                     <div className="min-w-0">
                       <p className="text-sm font-medium truncate">{entry.description}</p>
@@ -77,7 +79,7 @@ export function LoansPage() {
                       </div>
                     </div>
                   </div>
-                  <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400 shrink-0">
+                  <p className="shrink-0 text-sm font-bold text-success">
                     +{formatCurrency(entry.amount)}
                   </p>
                 </li>
@@ -107,6 +109,7 @@ export function LoansPage() {
 
 function AddCapitalForm({ onSuccess }: { onSuccess: () => void }) {
   const [addCapital, { isLoading, isError, error }] = useAddCapitalMutation();
+  const { toast } = useToast();
 
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
@@ -117,17 +120,23 @@ function AddCapitalForm({ onSuccess }: { onSuccess: () => void }) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    const result = await addCapital({
-      amount: Number(amount),
-      description: description.trim(),
-      transaction_date: transactionDate,
-    });
+    try {
+      await addCapital({
+        amount: Number(amount),
+        description: description.trim(),
+        transaction_date: transactionDate,
+      }).unwrap();
 
-    if ("data" in result) {
+      toast({
+        title: "Capital added",
+        description: `${formatCurrency(Number(amount))} has been added to the finance ledger.`,
+      });
       setAmount("");
       setDescription("");
       setTransactionDate(new Date().toISOString().slice(0, 10));
       onSuccess();
+    } catch {
+      // Inline error text keeps the correction next to the fields.
     }
   }
 
@@ -176,7 +185,7 @@ function AddCapitalForm({ onSuccess }: { onSuccess: () => void }) {
 
       {isError && (
         <p className="text-xs text-destructive">
-          {(error as any)?.data?.message ?? "Failed to add capital"}
+          {getApiErrorMessage(error, "Failed to add capital")}
         </p>
       )}
 

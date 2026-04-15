@@ -105,9 +105,9 @@ function UserRow({ user, isMenuOpen, onMenuToggle, onMoveAgent }: UserRowProps) 
     .toUpperCase();
 
   const roleColors: Record<StaffRole, string> = {
-    "super-admin": "bg-violet-500/20 text-violet-600",
-    supervisor: "bg-sky-500/20 text-sky-600",
-    agent: "bg-emerald-500/20 text-emerald-600",
+    "super-admin": "bg-primary/15 text-primary",
+    supervisor: "bg-info/15 text-info",
+    agent: "bg-success/15 text-success",
   };
 
   const hasActions = user.role.slug === "agent";
@@ -126,7 +126,7 @@ function UserRow({ user, isMenuOpen, onMenuToggle, onMoveAgent }: UserRowProps) 
         <div className="flex items-center gap-2">
           <p className="text-sm font-semibold truncate">{user.name}</p>
           {user.is_active === 0 && (
-            <span className="text-[9px] font-semibold bg-red-500/10 text-red-500 px-1.5 py-0.5 rounded shrink-0">
+            <span className="shrink-0 rounded px-1.5 py-0.5 text-[9px] font-semibold bg-danger/10 text-danger">
               Inactive
             </span>
           )}
@@ -134,7 +134,7 @@ function UserRow({ user, isMenuOpen, onMenuToggle, onMoveAgent }: UserRowProps) 
         <p className="text-xs text-muted-foreground truncate">{user.email}</p>
         <p className="text-[11px] text-muted-foreground mt-0.5">
           {user.market?.name ?? (
-            <span className="text-amber-500 font-medium">Unassigned</span>
+            <span className="font-medium text-warning">Unassigned</span>
           )}
           {/* We might add an agent_code property in the future if backend supports it */}
         </p>

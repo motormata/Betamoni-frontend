@@ -10,6 +10,8 @@ import {
 import type { LoanProduct } from "@/types/product.types";
 import type { RepaymentFrequency } from "@/types/agent.types";
 import { formatCurrency } from "@/lib/formatters";
+import { useToast } from "@/hooks/use-toast";
+import { getApiErrorMessage } from "@/lib/api-errors";
 
 // ── Products Page ──────────────────────────────────────────────────
 
@@ -41,7 +43,7 @@ export function ProductsPage() {
       {products.length > 0 && (
         <div className="flex items-center gap-3 text-xs text-muted-foreground">
           <span className="inline-flex items-center gap-1">
-            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+            <CheckCircle2 className="h-3.5 w-3.5 text-success" />
             {activeCount} active
           </span>
           <span className="inline-flex items-center gap-1">
@@ -146,6 +148,7 @@ const FREQUENCIES: { value: RepaymentFrequency; label: string }[] = [
 
 function CreateProductForm({ onSuccess }: { onSuccess: () => void }) {
   const [create, { isLoading, isError, error }] = useCreateLoanProductMutation();
+  const { toast } = useToast();
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -159,18 +162,24 @@ function CreateProductForm({ onSuccess }: { onSuccess: () => void }) {
     e.preventDefault();
     if (!frequency) return;
 
-    const result = await create({
-      name: name.trim(),
-      description: description.trim() || undefined,
-      principal_amount: Number(principal),
-      interest_rate: Number(rate),
-      duration_days: Number(duration),
-      repayment_frequency: frequency,
-      is_active: isActive,
-    });
+    try {
+      await create({
+        name: name.trim(),
+        description: description.trim() || undefined,
+        principal_amount: Number(principal),
+        interest_rate: Number(rate),
+        duration_days: Number(duration),
+        repayment_frequency: frequency,
+        is_active: isActive,
+      }).unwrap();
 
-    if ("data" in result) {
+      toast({
+        title: "Loan deal created",
+        description: `${name.trim()} is now available in the product catalog.`,
+      });
       onSuccess();
+    } catch {
+      // Inline error text is better for recoverable form issues.
     }
   }
 
@@ -278,7 +287,7 @@ function CreateProductForm({ onSuccess }: { onSuccess: () => void }) {
 
       {isError && (
         <p className="text-xs text-destructive">
-          {(error as any)?.data?.message ?? "Failed to create loan deal"}
+          {getApiErrorMessage(error, "Failed to create loan deal")}
         </p>
       )}
 

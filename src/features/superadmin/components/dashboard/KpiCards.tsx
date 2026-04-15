@@ -18,9 +18,9 @@ export function KpiCards({ data, isLoading }: KpiCardsProps) {
 
   const cards = [
     { label: "Total Active", count: total, sub: "", color: "text-foreground" },
-    { label: "Daily", count: daily.count, sub: formatCurrency(daily.total_principal), color: "text-sky-500" },
-    { label: "Weekly", count: weekly.count, sub: formatCurrency(weekly.total_principal), color: "text-violet-500" },
-    { label: "Monthly", count: monthly.count, sub: formatCurrency(monthly.total_principal), color: "text-amber-500" },
+    { label: "Daily", count: daily.count, sub: formatCurrency(daily.total_principal), color: "text-info" },
+    { label: "Weekly", count: weekly.count, sub: formatCurrency(weekly.total_principal), color: "text-primary" },
+    { label: "Monthly", count: monthly.count, sub: formatCurrency(monthly.total_principal), color: "text-warning" },
   ];
 
   if (isLoading) {

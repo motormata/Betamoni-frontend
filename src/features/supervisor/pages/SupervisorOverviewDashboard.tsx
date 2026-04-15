@@ -32,58 +32,50 @@ export function SupervisorOverviewDashboard() {
             icon={Banknote}
             label="Total Loans"
             value={val(summary.total_loans ?? summary.total)}
-            color="text-primary"
-            bgColor="bg-primary/10"
+            tone="primary"
           />
           <SummaryCard
             icon={TrendingUp}
             label="Active"
             value={val(summary.active_loans ?? summary.active)}
-            color="text-emerald-600"
-            bgColor="bg-emerald-500/10"
+            tone="success"
           />
           <SummaryCard
             icon={Clock}
             label="Pending"
             value={val(summary.pending_loans ?? summary.pending)}
-            color="text-amber-600"
-            bgColor="bg-amber-500/10"
+            tone="warning"
           />
           <SummaryCard
             icon={CheckCircle2}
             label="Completed"
             value={val(summary.completed_loans ?? summary.completed)}
-            color="text-sky-600"
-            bgColor="bg-sky-500/10"
+            tone="info"
           />
           <SummaryCard
             icon={AlertTriangle}
             label="Defaulted"
             value={val(summary.defaulted_loans ?? summary.defaulted)}
-            color="text-red-500"
-            bgColor="bg-red-500/10"
+            tone="danger"
           />
           <SummaryCard
             icon={Users2}
             label="Agents"
             value={totalAgents ?? val(summary.total_agents ?? summary.agents)}
-            color="text-violet-600"
-            bgColor="bg-violet-500/10"
+            tone="info"
           />
           <SummaryCard
             icon={CreditCard}
             label="Total Disbursed"
             value={formatCurrency(summary.total_disbursed ?? summary.total_principal)}
-            color="text-primary"
-            bgColor="bg-primary/10"
+            tone="primary"
             fullWidth
           />
           <SummaryCard
             icon={CreditCard}
             label="Total Collected"
             value={formatCurrency(summary.total_collected ?? summary.total_repaid)}
-            color="text-emerald-600"
-            bgColor="bg-emerald-500/10"
+            tone="success"
             fullWidth
           />
           <SummaryCard
@@ -93,8 +85,7 @@ export function SupervisorOverviewDashboard() {
               (Number(summary.total_disbursed ?? summary.total_principal) || 0) -
               (Number(summary.total_collected ?? summary.total_repaid) || 0)
             )}
-            color="text-orange-500"
-            bgColor="bg-orange-500/10"
+            tone="warning"
             fullWidth
           />
         </div>

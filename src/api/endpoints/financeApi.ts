@@ -26,7 +26,7 @@ export const financeApi = baseApi.injectEndpoints({
         method: "POST",
         body,
       }),
-      invalidatesTags: ["Loans", "Transactions"],
+      invalidatesTags: ["Transactions", "Dashboard"],
     }),
 
     // ── GET /api/cash-ledger?type=capital_in ──────────────────

@@ -1,10 +1,13 @@
 import { useState } from "react";
 import { useCreateRegionMutation } from "@/api/endpoints/clustersApi";
+import { useToast } from "@/hooks/use-toast";
+import { getApiErrorMessage } from "@/lib/api-errors";
 
 // ── Create Region Form ─────────────────────────────────────────────
 
 export function CreateRegionForm({ onSuccess }: { onSuccess?: () => void }) {
   const [createRegion, { isLoading, isError, error }] = useCreateRegionMutation();
+  const { toast } = useToast();
 
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
@@ -12,15 +15,21 @@ export function CreateRegionForm({ onSuccess }: { onSuccess?: () => void }) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    const result = await createRegion({
-      name: name.trim(),
-      code: code.trim().toUpperCase(),
-    });
+    try {
+      await createRegion({
+        name: name.trim(),
+        code: code.trim().toUpperCase(),
+      }).unwrap();
 
-    if ("data" in result) {
+      toast({
+        title: "Region created",
+        description: `${name.trim()} is now available for market setup.`,
+      });
       setName("");
       setCode("");
       onSuccess?.();
+    } catch {
+      // Inline error text keeps the fix close to the form.
     }
   }
 
@@ -59,7 +68,7 @@ export function CreateRegionForm({ onSuccess }: { onSuccess?: () => void }) {
 
       {isError && (
         <p className="text-xs text-destructive">
-          {(error as any)?.data?.message ?? "Failed to create region"}
+          {getApiErrorMessage(error, "Failed to create region")}
         </p>
       )}
 

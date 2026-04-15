@@ -20,8 +20,8 @@ export function MarketsListPanel() {
           className="flex items-start justify-between gap-3 px-4 py-3 hover:bg-muted/50 transition-colors"
         >
           <div className="flex items-start gap-3 min-w-0">
-            <div className="h-8 w-8 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0 mt-0.5">
-              <Store className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+            <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-success/10">
+              <Store className="h-4 w-4 text-success" />
             </div>
             <div className="min-w-0">
               <p className="text-sm font-medium truncate">{market.name}</p>

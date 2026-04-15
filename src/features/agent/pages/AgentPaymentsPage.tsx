@@ -8,6 +8,9 @@ import type { PaymentMethod } from "@/types/payment.types";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Pagination } from "@/components/shared/Pagination";
 import { LoadingState, ErrorState, EmptyState } from "@/components/shared/FeedbackStates";
+import { useToast } from "@/hooks/use-toast";
+import { getApiErrorMessage } from "@/lib/api-errors";
+import { formatCurrency } from "@/lib/formatters";
 
 // ── Agent Payments Page ────────────────────────────────────────────
 
@@ -43,6 +46,7 @@ export function AgentPaymentsPage() {
 
 function RecordPaymentForm({ onSuccess }: { onSuccess: () => void }) {
   const [createPayment, { isLoading, isError, error }] = useCreatePaymentMutation();
+  const { toast } = useToast();
 
   const [loanId, setLoanId] = useState("");
   const [amount, setAmount] = useState("");
@@ -56,18 +60,24 @@ function RecordPaymentForm({ onSuccess }: { onSuccess: () => void }) {
     e.preventDefault();
     if (!loanId.trim() || !paymentMethod) return;
 
-    const result = await createPayment({
-      loan_id: loanId.trim(),
-      amount: Number(amount),
-      payment_date: paymentDate,
-      payment_method: paymentMethod as PaymentMethod,
-      ...(repaymentScheduleId.trim() && {
-        repayment_schedule_id: repaymentScheduleId.trim(),
-      }),
-    });
+    try {
+      await createPayment({
+        loan_id: loanId.trim(),
+        amount: Number(amount),
+        payment_date: paymentDate,
+        payment_method: paymentMethod as PaymentMethod,
+        ...(repaymentScheduleId.trim() && {
+          repayment_schedule_id: repaymentScheduleId.trim(),
+        }),
+      }).unwrap();
 
-    if ("data" in result) {
+      toast({
+        title: "Payment recorded",
+        description: `${formatCurrency(Number(amount))} was recorded for the selected loan.`,
+      });
       onSuccess();
+    } catch {
+      // Inline error text stays next to the form fields.
     }
   }
 
@@ -146,7 +156,7 @@ function RecordPaymentForm({ onSuccess }: { onSuccess: () => void }) {
 
       {isError && (
         <p className="text-xs text-destructive">
-          {(error as any)?.data?.message ?? "Failed to record payment"}
+          {getApiErrorMessage(error, "Failed to record payment")}
         </p>
       )}
 
