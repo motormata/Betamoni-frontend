@@ -1,23 +1,33 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Banknote, Plus, ChevronRight, Package, TrendingUp, Clock } from "lucide-react";
 import {
-  useGetAgentLoansQuery,
-  useGetAgentBorrowersQuery,
+  Banknote,
+  ChevronRight,
+  Clock,
+  Package,
+  Plus,
+  TrendingUp,
+} from "lucide-react";
+import {
   useCreateAgentLoanMutation,
+  useGetAgentBorrowersQuery,
+  useGetAgentLoansQuery,
 } from "@/api/endpoints/agentApi";
 import { useGetAgentProductsQuery } from "@/api/endpoints/productsApi";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Pagination } from "@/components/shared/Pagination";
-import { LoadingState, ErrorState, EmptyState } from "@/components/shared/FeedbackStates";
+import {
+  EmptyState,
+  ErrorState,
+  LoadingState,
+} from "@/components/shared/FeedbackStates";
 import { CopyButton } from "@/components/shared/CopyButton";
 import { formatCurrency } from "@/lib/formatters";
+import type { AgentLoan } from "@/types/agent.types";
 import type { LoanProduct } from "@/types/product.types";
 import { useToast } from "@/hooks/use-toast";
 import { getApiErrorMessage } from "@/lib/api-errors";
-
-// ── Agent Loans Page ───────────────────────────────────────────────
 
 export function AgentLoansPage() {
   const [page, setPage] = useState(1);
@@ -37,8 +47,8 @@ export function AgentLoansPage() {
         action={
           <button
             type="button"
-            onClick={() => setShowForm((p) => !p)}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors"
+            onClick={() => setShowForm((prev) => !prev)}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
           >
             <Plus className="h-3.5 w-3.5" />
             Loan
@@ -46,12 +56,9 @@ export function AgentLoansPage() {
         }
       />
 
-      {showForm && (
-        <CreateLoanForm onSuccess={() => setShowForm(false)} />
-      )}
+      {showForm && <CreateLoanForm onSuccess={() => setShowForm(false)} />}
 
-      {/* Loans List */}
-      <div className="rounded-xl border bg-card overflow-hidden">
+      <div className="overflow-hidden rounded-xl border bg-card">
         {isLoading && <LoadingState />}
         {isError && <ErrorState message="Failed to load loans" />}
         {!isLoading && !isError && loans.length === 0 && (
@@ -59,27 +66,30 @@ export function AgentLoansPage() {
         )}
 
         {loans.length > 0 && (
-          <div className="max-h-[60vh] overflow-y-auto custom-scrollbar">
+          <div className="custom-scrollbar max-h-[60vh] overflow-y-auto">
             <ul className="divide-y divide-border">
               {loans.map((loan) => (
                 <li
                   key={loan.id}
                   onClick={() => navigate(`/loans/${loan.id}`)}
-                  className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-muted/50 cursor-pointer transition-colors"
+                  className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-muted/50"
                 >
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-semibold truncate">
-                        {/* Show product name if available, else fall back to amount */}
-                        {(loan as any).product?.name
-                          ? (loan as any).product.name
-                          : `₦${Number(loan.principal_amount).toLocaleString()}`}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="truncate text-sm font-semibold">
+                        {getLoanTitle(loan)}
                       </p>
                       <StatusBadge status={loan.status} />
+                      <LoanDueBadge loan={loan} />
                       <CopyButton text={loan.id} />
                     </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">
+                    <p className="mt-0.5 truncate text-xs font-medium text-foreground/80">
+                      {getLoanBorrowerLabel(loan)}
+                    </p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {/* {loan.loan_number ? `${loan.loan_number} · ` : ""} */}
                       {loan.repayment_frequency} · {loan.duration_days}d · {loan.interest_rate}%
+                      {loan.due_date ? ` · Due ${fmtShortDate(loan.due_date)}` : ""}
                     </p>
                   </div>
                   <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -106,7 +116,69 @@ export function AgentLoansPage() {
   );
 }
 
-// ── Create Loan Form ───────────────────────────────────────────────
+function getLoanTitle(loan: AgentLoan): string {
+  return (loan as AgentLoan & { product?: { name?: string } }).product?.name
+    ? (loan as AgentLoan & { product?: { name?: string } }).product?.name ?? ""
+    : formatCurrency(loan.principal_amount);
+}
+
+function getLoanBorrowerLabel(loan: AgentLoan): string {
+  const borrowerName =
+    loan.borrower?.full_name ??
+    (loan.borrower ? `${loan.borrower.first_name} ${loan.borrower.last_name}` : null);
+
+  if (borrowerName && loan.borrower?.phone) {
+    return `${borrowerName} · ${loan.borrower.phone}`;
+  }
+
+  return borrowerName ?? "Borrower details unavailable";
+}
+
+function fmtShortDate(value: string): string {
+  const date = value.includes("T") ? new Date(value) : new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return value;
+
+  return date.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+  });
+}
+
+function LoanDueBadge({ loan }: { loan: AgentLoan }) {
+  const normalizedStatus = loan.status.toLowerCase().trim();
+  if (normalizedStatus === "completed" || normalizedStatus === "defaulted") {
+    return null;
+  }
+
+  if (!loan.due_date) return null;
+
+  const dueDate = loan.due_date.includes("T")
+    ? new Date(loan.due_date)
+    : new Date(`${loan.due_date}T00:00:00`);
+  if (Number.isNaN(dueDate.getTime())) return null;
+
+  const today = new Date();
+  const due = new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate()).getTime();
+  const current = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+
+  if (due === current) {
+    return (
+      <span className="inline-flex items-center rounded-full bg-warning/10 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-warning ring-1 ring-inset ring-warning/20">
+        Due today
+      </span>
+    );
+  }
+
+  if (due < current && normalizedStatus !== "overdue") {
+    return (
+      <span className="inline-flex items-center rounded-full bg-danger/10 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-danger ring-1 ring-inset ring-danger/20">
+        Past due
+      </span>
+    );
+  }
+
+  return null;
+}
 
 function CreateLoanForm({ onSuccess }: { onSuccess: () => void }) {
   const [createLoan, { isLoading, isError, error }] = useCreateAgentLoanMutation();
@@ -116,17 +188,18 @@ function CreateLoanForm({ onSuccess }: { onSuccess: () => void }) {
 
   const borrowers = borrowersRes?.data?.data ?? [];
   const products = productsRes?.data ?? [];
-  const activeProducts = products.filter((p) => p.is_active);
+  const activeProducts = products.filter((product) => product.is_active);
 
   const [borrowerId, setBorrowerId] = useState("");
   const [productId, setProductId] = useState("");
   const [quantity, setQuantity] = useState("1");
 
-  // Selected product preview
-  const selectedProduct = activeProducts.find((p) => p.id === productId) as LoanProduct | undefined;
+  const selectedProduct = activeProducts.find((product) => product.id === productId) as
+    | LoanProduct
+    | undefined;
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
     if (!borrowerId || !productId) return;
 
     try {
@@ -159,60 +232,55 @@ function CreateLoanForm({ onSuccess }: { onSuccess: () => void }) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="rounded-xl border bg-card p-4 space-y-4 animate-in slide-in-from-top-2 duration-200"
+      className="animate-in slide-in-from-top-2 rounded-xl border bg-card p-4 space-y-4 duration-200"
     >
       <p className="text-sm font-semibold">Issue Loan</p>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {/* Borrower select */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div>
           <label className="text-xs font-medium text-muted-foreground">Borrower *</label>
           <select
             value={borrowerId}
-            onChange={(e) => setBorrowerId(e.target.value)}
+            onChange={(event) => setBorrowerId(event.target.value)}
             className="input-field mt-1"
             required
             disabled={borrowersLoading}
           >
             <option value="">
-              {borrowersLoading ? "Loading…" : "Select a borrower"}
+              {borrowersLoading ? "Loading..." : "Select a borrower"}
             </option>
-            {borrowers.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.first_name} {b.last_name} — {b.phone}
+            {borrowers.map((borrower) => (
+              <option key={borrower.id} value={borrower.id}>
+                {borrower.first_name} {borrower.last_name} — {borrower.phone}
               </option>
             ))}
           </select>
         </div>
 
-        {/* Product select */}
         <div>
           <label className="text-xs font-medium text-muted-foreground">Loan Deal *</label>
           <select
             value={productId}
-            onChange={(e) => setProductId(e.target.value)}
+            onChange={(event) => setProductId(event.target.value)}
             className="input-field mt-1"
             required
             disabled={productsLoading}
           >
-            <option value="">
-              {productsLoading ? "Loading…" : "Select a deal"}
-            </option>
-            {activeProducts.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name} — {formatCurrency(p.principal_amount)}
+            <option value="">{productsLoading ? "Loading..." : "Select a deal"}</option>
+            {activeProducts.map((product) => (
+              <option key={product.id} value={product.id}>
+                {product.name} — {formatCurrency(product.principal_amount)}
               </option>
             ))}
           </select>
         </div>
 
-        {/* Quantity */}
         <div>
           <label className="text-xs font-medium text-muted-foreground">Quantity *</label>
           <input
             type="number"
             value={quantity}
-            onChange={(e) => setQuantity(e.target.value)}
+            onChange={(event) => setQuantity(event.target.value)}
             className="input-field mt-1"
             min="1"
             required
@@ -220,23 +288,22 @@ function CreateLoanForm({ onSuccess }: { onSuccess: () => void }) {
         </div>
       </div>
 
-      {/* Product preview */}
       {selectedProduct && (
-        <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+        <div className="space-y-2 rounded-lg border bg-muted/30 p-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Deal Preview
           </p>
           <div className="grid grid-cols-3 gap-2">
             <div className="flex items-center gap-1.5 text-xs">
-              <Package className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              <Package className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
               <span className="font-medium">{selectedProduct.name}</span>
             </div>
             <div className="flex items-center gap-1.5 text-xs">
-              <TrendingUp className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              <TrendingUp className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
               <span>{selectedProduct.interest_rate}% interest</span>
             </div>
             <div className="flex items-center gap-1.5 text-xs">
-              <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              <Clock className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
               <span>{selectedProduct.duration_days} days</span>
             </div>
           </div>
@@ -258,9 +325,9 @@ function CreateLoanForm({ onSuccess }: { onSuccess: () => void }) {
       <button
         type="submit"
         disabled={isLoading || !borrowerId || !productId}
-        className="w-full rounded-lg bg-primary py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
+        className="w-full rounded-lg bg-primary py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
       >
-        {isLoading ? "Creating…" : "Issue Loan"}
+        {isLoading ? "Creating..." : "Issue Loan"}
       </button>
     </form>
   );

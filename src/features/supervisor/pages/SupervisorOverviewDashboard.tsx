@@ -14,6 +14,7 @@ export function SupervisorOverviewDashboard() {
   // Use the agents-performance endpoint to get the true total count
   const { data: agentsRes } = useGetAgentsPerformanceQuery();
   const totalAgents = agentsRes?.data?.length;
+  const disbursedCount = summary ? getDisbursedLoanCount(summary) : 0;
 
   return (
     <div className="p-4 lg:p-6 space-y-5">
@@ -39,6 +40,12 @@ export function SupervisorOverviewDashboard() {
             label="Active"
             value={val(summary.active_loans ?? summary.active)}
             tone="success"
+          />
+          <SummaryCard
+            icon={CreditCard}
+            label="Disbursed"
+            value={disbursedCount}
+            tone="info"
           />
           <SummaryCard
             icon={Clock}
@@ -92,4 +99,24 @@ export function SupervisorOverviewDashboard() {
       )}
     </div>
   );
+}
+
+function getNumericSummaryValue(value: unknown): number {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function getDisbursedLoanCount(summary: Record<string, unknown>): number {
+  const explicitDisbursed = summary.disbursed_loans ?? summary.disbursed;
+  if (explicitDisbursed != null) {
+    return getNumericSummaryValue(explicitDisbursed);
+  }
+
+  const total = getNumericSummaryValue(summary.total_loans ?? summary.total);
+  const active = getNumericSummaryValue(summary.active_loans ?? summary.active);
+  const pending = getNumericSummaryValue(summary.pending_loans ?? summary.pending);
+  const completed = getNumericSummaryValue(summary.completed_loans ?? summary.completed);
+  const defaulted = getNumericSummaryValue(summary.defaulted_loans ?? summary.defaulted);
+
+  return Math.max(total - active - pending - completed - defaulted, 0);
 }

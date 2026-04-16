@@ -41,7 +41,7 @@ function PortfolioSection({ portfolio }: { portfolio: AgentPerformance["portfoli
       <div className="rounded-lg bg-muted/50 lg:bg-card lg:border p-2.5 space-y-1 text-center">
         <AlertTriangle className="mx-auto h-4 w-4 text-danger" />
         <p className="text-sm font-bold text-danger">{portfolio.total_overdue_count}</p>
-        <p className="text-[10px] text-muted-foreground leading-tight">Overdue Loans</p>
+        <p className="text-[10px] text-muted-foreground leading-tight">Default count</p>
       </div>
       <div className="rounded-lg bg-muted/50 lg:bg-card lg:border p-2.5 space-y-1 text-center">
         <TrendingUp className="mx-auto h-4 w-4 text-warning" />

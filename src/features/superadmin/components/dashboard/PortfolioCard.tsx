@@ -76,15 +76,15 @@ export function PortfolioCard({ data, isLoading, isError }: PortfolioCardProps) 
 
       {/* Breakdown grid */}
       <div className="grid grid-cols-2 gap-3">
-        <StatTile
+        {/* <StatTile
           icon={<TrendingUp className="h-3.5 w-3.5 text-success" />}
           label="Received"
           value={formatCurrency(received)}
-        />
-        <StatTile
+        /> */}
+        {/* <StatTile
           label="Total Outstanding"
           value={formatCurrency(outstanding)}
-        />
+        /> */}
         <StatTile
           icon={<TrendingDown className="h-3.5 w-3.5 text-danger" />}
           label="Overdue"
@@ -92,7 +92,7 @@ export function PortfolioCard({ data, isLoading, isError }: PortfolioCardProps) 
           valueClass="text-danger"
         />
         <StatTile
-          label="Current"
+          label="Current Outstanding"
           value={formatCurrency(current)}
           valueClass="text-info"
         />

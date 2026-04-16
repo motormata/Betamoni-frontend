@@ -34,6 +34,7 @@ export interface Borrower {
   gender: string;
   full_name?: string;
   is_active?: boolean;
+  loans?: AgentLoan[];
   created_at?: string;
   updated_at?: string;
   [key: string]: unknown;
