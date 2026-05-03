@@ -1,4 +1,4 @@
-import { BarChart2, TrendingDown, TrendingUp } from "lucide-react";
+import { BarChart2, TrendingDown } from "lucide-react";
 import type { PortfolioData } from "@/types/dashboard.types";
 import { formatCurrency } from "./CashPositionCard";
 
@@ -14,7 +14,7 @@ export function PortfolioCard({ data, isLoading, isError }: PortfolioCardProps) 
   const recoveryRate = data?.recovery_rate ?? 0;
   const totalExposure = data?.total_exposure ?? 0;
   const received = data?.breakdown?.total_received ?? 0;
-  const outstanding = data?.breakdown?.total_outstanding ?? 0;
+  // const outstanding = data?.breakdown?.total_outstanding ?? 0;
   const overdue = data?.breakdown?.overdue_outstanding ?? 0;
   const current = data?.breakdown?.current_outstanding ?? 0;
 

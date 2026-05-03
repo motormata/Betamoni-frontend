@@ -28,6 +28,7 @@ export interface TodayRepaymentsData {
 
 export interface TodayRepaymentPendingItem {
   schedule_id: string;
+  loan_id?: UUID;
   loan_number: string;
   borrower_name: string;
   borrower_phone: string;
@@ -112,6 +113,7 @@ export const {
   useCreateAgentLoanMutation,
   useGetAgentLoansSummaryQuery,
   useGetAgentLoansQuery,
+  useLazyGetAgentLoansQuery,
   useGetAgentBorrowersQuery,
   useLazyGetAgentLoansSummaryQuery,
   useLazyGetAgentBorrowersQuery,

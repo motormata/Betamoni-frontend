@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   Banknote,
@@ -17,19 +18,22 @@ import {
   MapPin,
   Hash,
 } from "lucide-react";
+import { PortfolioSummary } from "../components/portfolio/PortfolioSummary";
 import {
   useGetAgentLoansSummaryQuery,
   useGetAgentBorrowersQuery,
   useGetTodayRepaymentsQuery,
+  useLazyGetAgentLoansQuery,
 } from "@/api/endpoints/agentApi";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { LoadingState, ErrorState } from "@/components/shared/FeedbackStates";
-import { SummaryCard } from "@/components/shared/SummaryCard";
 import { val, formatCurrency } from "@/lib/formatters";
+import { useToast } from "@/hooks/use-toast";
 import type {
   TodayRepaymentsData,
   TodayRepaymentPendingItem,
 } from "@/api/endpoints/agentApi";
+import type { AgentLoan, Borrower } from "@/types/agent.types";
 
 export function AgentOverviewDashboard() {
   const todayDate = new Date().toISOString().slice(0, 10);
@@ -41,6 +45,7 @@ export function AgentOverviewDashboard() {
   const summary = res?.data;
   const today = todayRes?.data;
   const totalBorrowers = borrowersRes?.data?.total;
+  const borrowers = borrowersRes?.data?.data ?? [];
   const disbursedCount = summary ? getDisbursedLoanCount(summary) : 0;
 
   return (
@@ -54,89 +59,87 @@ export function AgentOverviewDashboard() {
       {todayLoading && (
         <div className="h-32 animate-pulse rounded-xl border bg-card p-4" />
       )}
-      {today && <TodayTargetCard today={today} />}
+      {today && <TodayTargetCard today={today} borrowers={borrowers} />}
 
       {isLoading && <LoadingState />}
       {isError && <ErrorState message="Failed to load summary" />}
 
       {summary && (
-        <>
-          <p className="-mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Portfolio Summary
-          </p>
-          <div className="grid grid-cols-2 gap-3">
-            <SummaryCard
-              icon={Banknote}
-              label="Total Loans"
-              value={val(summary.total_loans ?? summary.total)}
-              tone="primary"
-            />
-            <SummaryCard
-              icon={TrendingUp}
-              label="Active"
-              value={val(summary.active_loans ?? summary.active)}
-              tone="success"
-            />
-            <SummaryCard
-              icon={CreditCard}
-              label="Disbursed"
-              value={disbursedCount}
-              tone="info"
-            />
-            <SummaryCard
-              icon={Clock}
-              label="Pending"
-              value={val(summary.pending_loans ?? summary.pending)}
-              tone="warning"
-            />
-            <SummaryCard
-              icon={CheckCircle2}
-              label="Completed"
-              value={val(summary.completed_loans ?? summary.completed)}
-              tone="info"
-            />
-            <SummaryCard
-              icon={AlertTriangle}
-              label="Defaulted"
-              value={val(summary.defaulted_loans ?? summary.defaulted)}
-              tone="danger"
-            />
-            <SummaryCard
-              icon={Users2}
-              label="Borrowers"
-              value={totalBorrowers ?? val(summary.total_borrowers ?? summary.borrowers)}
-              tone="info"
-            />
-            <SummaryCard
-              icon={CreditCard}
-              label="Total Disbursed"
-              value={formatCurrency(summary.total_disbursed ?? summary.total_principal)}
-              tone="primary"
-              fullWidth
-            />
-            <SummaryCard
-              icon={CreditCard}
-              label="Total Collected"
-              value={formatCurrency(summary.total_collected ?? summary.total_repaid)}
-              tone="success"
-              fullWidth
-            />
-            <SummaryCard
-              icon={CreditCard}
-              label="Total Outstanding"
-              value={formatCurrency(
+        <PortfolioSummary
+          counts={[
+            {
+              icon: Banknote,
+              label: "Total Loans",
+              value: val(summary.total_loans ?? summary.total),
+              tone: "primary",
+            },
+            {
+              icon: TrendingUp,
+              label: "Active",
+              value: val(summary.active_loans ?? summary.active),
+              tone: "success",
+            },
+            {
+              icon: CreditCard,
+              label: "Disbursed",
+              value: disbursedCount,
+              tone: "info",
+            },
+            {
+              icon: Clock,
+              label: "Pending",
+              value: val(summary.pending_loans ?? summary.pending),
+              tone: "warning",
+            },
+            {
+              icon: CheckCircle2,
+              label: "Completed",
+              value: val(summary.completed_loans ?? summary.completed),
+              tone: "info",
+            },
+            {
+              icon: AlertTriangle,
+              label: "Defaulted",
+              value: val(summary.defaulted_loans ?? summary.defaulted),
+              tone: "danger",
+            },
+            {
+              icon: Users2,
+              label: "Borrowers",
+              value: totalBorrowers ?? val(summary.total_borrowers ?? summary.borrowers),
+              tone: "info",
+            },
+          ]}
+          volumes={[
+            {
+              icon: CreditCard,
+              label: "Total Disbursed",
+              value: formatCurrency(summary.total_disbursed ?? summary.total_principal),
+              tone: "primary",
+            },
+            {
+              icon: CreditCard,
+              label: "Total Collected",
+              value: formatCurrency(summary.total_collected ?? summary.total_repaid),
+              tone: "success",
+            },
+            {
+              icon: CreditCard,
+              label: "Total Outstanding",
+              value: formatCurrency(
                 (Number(summary.total_disbursed ?? summary.total_principal) || 0) -
                   (Number(summary.total_collected ?? summary.total_repaid) || 0),
-              )}
-              tone="warning"
-              fullWidth
-            />
-          </div>
-        </>
+              ),
+              tone: "warning",
+            },
+          ]}
+        />
       )}
     </div>
   );
 }
+
+// ── Helpers ─────────────────────────────────────────────────────────
 
 function getNumericSummaryValue(value: unknown): number {
   const parsed = Number(value);
@@ -158,8 +161,20 @@ function getDisbursedLoanCount(summary: Record<string, unknown>): number {
   return Math.max(total - active - pending - completed - defaulted, 0);
 }
 
-function TodayTargetCard({ today }: { today: TodayRepaymentsData }) {
+// ── Today's Target Card ─────────────────────────────────────────────
+
+function TodayTargetCard({
+  today,
+  borrowers,
+}: {
+  today: TodayRepaymentsData;
+  borrowers: Borrower[];
+}) {
   const [showPendingList, setShowPendingList] = useState(false);
+  const [resolvingLoanNumber, setResolvingLoanNumber] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [fetchLoansPage] = useLazyGetAgentLoansQuery();
   const rate = Math.min(today.collection_rate, 100);
   const outstanding = Math.max(today.outstanding, 0);
   const isComplete = rate >= 100;
@@ -174,6 +189,54 @@ function TodayTargetCard({ today }: { today: TodayRepaymentsData }) {
     day: "numeric",
     month: "long",
   });
+
+  async function handleOpenPendingLoan(item: TodayRepaymentPendingItem) {
+    if (item.loan_id) {
+      navigate(`/loans/${item.loan_id}`);
+      return;
+    }
+
+    if (!item.loan_number || resolvingLoanNumber) {
+      return;
+    }
+
+    try {
+      setResolvingLoanNumber(item.loan_number);
+
+      let currentPage = 1;
+      let lastPage = 1;
+
+      while (currentPage <= lastPage) {
+        const response = await fetchLoansPage(currentPage).unwrap();
+        const loans = response.data?.data ?? [];
+        lastPage = response.data?.last_page ?? currentPage;
+
+        const matchedLoan = loans.find(
+          (loan: AgentLoan) => loan.loan_number === item.loan_number,
+        );
+        if (matchedLoan?.id) {
+          navigate(`/loans/${matchedLoan.id}`);
+          return;
+        }
+
+        currentPage += 1;
+      }
+
+      toast({
+        title: "Loan not found",
+        description: `We couldn't open ${item.loan_number} from today's pending list.`,
+        variant: "destructive",
+      });
+    } catch {
+      toast({
+        title: "Unable to open loan",
+        description: "Something went wrong while locating this loan.",
+        variant: "destructive",
+      });
+    } finally {
+      setResolvingLoanNumber(null);
+    }
+  }
 
   return (
     <div className="overflow-hidden rounded-xl border bg-card">
@@ -283,7 +346,12 @@ function TodayTargetCard({ today }: { today: TodayRepaymentsData }) {
             showPendingList ? "block" : "hidden"
           }`}
         >
-          <PendingBreakdownPanel pendingItems={pendingItems} />
+          <PendingBreakdownPanel
+            pendingItems={pendingItems}
+            borrowers={borrowers}
+            onOpenLoan={handleOpenPendingLoan}
+            resolvingLoanNumber={resolvingLoanNumber}
+          />
         </div>
       </div>
     </div>
@@ -292,8 +360,14 @@ function TodayTargetCard({ today }: { today: TodayRepaymentsData }) {
 
 function PendingBreakdownPanel({
   pendingItems,
+  borrowers,
+  onOpenLoan,
+  resolvingLoanNumber,
 }: {
   pendingItems: TodayRepaymentPendingItem[];
+  borrowers: Borrower[];
+  onOpenLoan: (item: TodayRepaymentPendingItem) => void;
+  resolvingLoanNumber: string | null;
 }) {
   return (
     <div className="h-full px-4 py-4">
@@ -319,7 +393,13 @@ function PendingBreakdownPanel({
         <div className="-mx-4 overflow-x-auto px-4 pb-1">
           <div className="flex gap-3">
             {pendingItems.map((item) => (
-              <PendingRepaymentCard key={item.schedule_id} item={item} />
+              <PendingRepaymentCard
+                key={item.schedule_id}
+                item={item}
+                borrowerAddress={getPendingBorrowerAddress(item, borrowers)}
+                onOpenLoan={onOpenLoan}
+                isResolving={resolvingLoanNumber === item.loan_number}
+              />
             ))}
           </div>
         </div>
@@ -330,11 +410,19 @@ function PendingBreakdownPanel({
 
 function PendingRepaymentCard({
   item,
+  borrowerAddress,
+  onOpenLoan,
+  isResolving,
 }: {
   item: TodayRepaymentPendingItem;
+  borrowerAddress: string | null;
+  onOpenLoan: (item: TodayRepaymentPendingItem) => void;
+  isResolving: boolean;
 }) {
-  return (
-    <article className="min-w-[16.5rem] flex-1 rounded-xl border bg-muted/20 p-3">
+  const isClickable = Boolean(item.loan_id || item.loan_number);
+  const location = item.location?.trim() || borrowerAddress || "No location recorded";
+  const cardContent = (
+    <>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold">{item.borrower_name}</p>
@@ -345,9 +433,11 @@ function PendingRepaymentCard({
         </div>
         <div className="rounded-lg bg-warning/10 px-2 py-1 text-right">
           <p className="text-[10px] font-medium uppercase tracking-wide text-warning">
-            Remaining
+            {isResolving ? "Opening" : "Remaining"}
           </p>
-          <p className="text-sm font-bold text-warning">{formatCurrency(item.remaining)}</p>
+          <p className="text-sm font-bold text-warning">
+            {isResolving ? "..." : formatCurrency(item.remaining)}
+          </p>
         </div>
       </div>
 
@@ -376,13 +466,61 @@ function PendingRepaymentCard({
         </div>
         <div className="flex items-center gap-1.5 text-muted-foreground">
           <MapPin className="h-3 w-3 shrink-0" />
-          <span className="truncate">
-            {item.location?.trim() ? item.location : "No location recorded"}
+          <span className="truncate" title={location}>
+            {location}
           </span>
         </div>
       </div>
-    </article>
+    </>
   );
+
+  const baseClassName =
+    "min-w-[16.5rem] flex-1 rounded-xl border bg-muted/20 p-3 text-left transition-colors";
+
+  if (!isClickable) {
+    return <article className={baseClassName}>{cardContent}</article>;
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => void onOpenLoan(item)}
+      disabled={isResolving}
+      className={`${baseClassName} cursor-pointer hover:bg-muted/35 active:bg-muted/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-80`}
+      aria-label={`View loan details for ${item.borrower_name}`}
+    >
+      {cardContent}
+    </button>
+  );
+}
+
+function normalizePhone(value: string | null | undefined): string {
+  return (value ?? "").replace(/\D/g, "");
+}
+
+function getPendingBorrowerAddress(
+  item: TodayRepaymentPendingItem,
+  borrowers: Borrower[],
+): string | null {
+  const pendingPhone = normalizePhone(item.borrower_phone);
+  const pendingName = item.borrower_name.trim().toLowerCase();
+
+  const matchedBorrower = borrowers.find((borrower) => {
+    const borrowerPhone = normalizePhone(borrower.phone);
+    const borrowerName = (
+      borrower.full_name ?? `${borrower.first_name} ${borrower.last_name}`
+    )
+      .trim()
+      .toLowerCase();
+
+    if (pendingPhone && borrowerPhone) {
+      return borrowerPhone === pendingPhone;
+    }
+
+    return borrowerName === pendingName;
+  });
+
+  return matchedBorrower?.home_address?.trim() || null;
 }
 
 function StatTile({
