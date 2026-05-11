@@ -103,7 +103,7 @@ export const agentApi = baseApi.injectEndpoints({
         date
           ? `/api/dashboard/today-repayments?date=${date}`
           : "/api/dashboard/today-repayments",
-      providesTags: ["AgentLoans"],
+      providesTags: ["TodayRepayments"],
     }),
   }),
 });
