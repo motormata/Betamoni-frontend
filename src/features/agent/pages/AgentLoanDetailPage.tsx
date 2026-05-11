@@ -27,7 +27,7 @@ import { getApiErrorMessage } from "@/lib/api-errors";
 interface RepaymentInstallment {
   index: number;
   dueDate: Date | null;
-  status: "paid" | "missed" | "current" | "upcoming";
+  status: "paid" | "missed" | "pending";
 }
 
 interface ScheduleInfo {
@@ -46,6 +46,35 @@ interface ScheduleInfo {
 
 function startOfDay(value: Date): Date {
   return new Date(value.getFullYear(), value.getMonth(), value.getDate());
+}
+
+function isWeekend(value: Date): boolean {
+  const day = value.getDay();
+  return day === 0 || day === 6;
+}
+
+function nextWorkingDay(value: Date): Date {
+  const date = startOfDay(value);
+
+  while (isWeekend(date)) {
+    date.setDate(date.getDate() + 1);
+  }
+
+  return date;
+}
+
+function addWorkingDays(baseDate: Date, days: number): Date {
+  const date = startOfDay(baseDate);
+  let daysAdded = 0;
+
+  while (daysAdded < days) {
+    date.setDate(date.getDate() + 1);
+    if (!isWeekend(date)) {
+      daysAdded += 1;
+    }
+  }
+
+  return date;
 }
 
 function parseLoanDate(value: string | null | undefined): Date | null {
@@ -72,11 +101,10 @@ function addInstallmentStep(baseDate: Date, frequency: string, step: number): Da
       break;
     case "daily":
     default:
-      nextDate.setDate(nextDate.getDate() + step);
-      break;
+      return addWorkingDays(baseDate, step);
   }
 
-  return startOfDay(nextDate);
+  return nextWorkingDay(nextDate);
 }
 
 function useRepaymentSchedule(loan: AgentLoan | undefined) {
@@ -116,26 +144,24 @@ function useRepaymentSchedule(loan: AgentLoan | undefined) {
       totalAmount > 0 ? Math.min((amountPaid / totalAmount) * 100, 100) : 0;
     const isComplete = balance <= 0 || loan.status === "completed";
 
-    const originDate = parseLoanDate(loan.disbursement_date ?? loan.created_at);
+    const originDate = parseLoanDate(
+      loan.disbursement_date ?? loan.disbursed_at ?? loan.created_at,
+    );
     const today = startOfDay(new Date());
 
     const baseInstallments = Array.from({ length: installmentCount }, (_, index) => ({
       index,
-      dueDate: originDate ? addInstallmentStep(originDate, frequency, index) : null,
-      status: "upcoming" as const,
+      dueDate: originDate ? addInstallmentStep(originDate, frequency, index + 1) : null,
+      status: "pending" as const,
     }));
 
     const pastDueInstallments = originDate
       ? baseInstallments.filter(
           (installment) => installment.dueDate && installment.dueDate < today,
         ).length
-      : completedInstallments;
+      : 0;
 
     const missedInstallments = Math.max(pastDueInstallments - completedInstallments, 0);
-    const currentInstallmentIndex = Math.min(
-      Math.max(completedInstallments, pastDueInstallments),
-      installmentCount - 1,
-    );
 
     const installments = baseInstallments.map((installment) => {
       if (installment.index < completedInstallments) {
@@ -148,10 +174,6 @@ function useRepaymentSchedule(loan: AgentLoan | undefined) {
         installment.index < pastDueInstallments
       ) {
         return { ...installment, status: "missed" as const };
-      }
-
-      if (!isComplete && installment.index === currentInstallmentIndex) {
-        return { ...installment, status: "current" as const };
       }
 
       return installment;
@@ -366,7 +388,9 @@ function RepaymentScheduleCard({ schedule }: { schedule: ScheduleInfo }) {
     monthly: "month",
   };
 
-  const remaining = schedule.installmentCount - schedule.completedInstallments;
+  const pendingInstallments = schedule.installments.filter(
+    (installment) => installment.status === "pending",
+  ).length;
 
   return (
     <div className="rounded-xl border bg-card p-4 space-y-3">
@@ -405,14 +429,15 @@ function RepaymentScheduleCard({ schedule }: { schedule: ScheduleInfo }) {
                 ? "bg-primary text-primary-foreground"
                 : installment.status === "missed"
                 ? "bg-danger text-danger-foreground"
-                : installment.status === "current"
-                ? "border-2 border-primary bg-primary/10 text-primary"
                 : "bg-muted text-muted-foreground";
+            const statusLabel = capitalize(installment.status);
 
             return (
               <div
                 key={installment.index}
-                title={`${capitalize(schedule.frequency)} ${installment.index + 1} • ${titleDate}`}
+                title={`${capitalize(schedule.frequency)} ${
+                  installment.index + 1
+                } - ${statusLabel} - ${titleDate}`}
                 className={`flex h-6 w-6 items-center justify-center rounded-full text-[9px] font-bold transition-colors ${dotClass}`}
               >
                 {installment.status === "paid" ? (
@@ -433,10 +458,11 @@ function RepaymentScheduleCard({ schedule }: { schedule: ScheduleInfo }) {
               <CheckCircle2 className="h-3.5 w-3.5 text-success" />
               Loan fully repaid
             </>
-          ) : remaining > 0 ? (
+          ) : pendingInstallments > 0 ? (
             <>
               <CircleDot className="h-3.5 w-3.5 text-warning" />
-              {remaining} {remaining === 1 ? "repayment" : "repayments"} remaining
+              {pendingInstallments} pending{" "}
+              {pendingInstallments === 1 ? "repayment" : "repayments"}
             </>
           ) : (
             <>
@@ -590,7 +616,7 @@ function InlinePaymentForm({
             <option value="">Select</option>
             <option value="cash">Cash</option>
             <option value="bank_transfer">Bank Transfer</option>
-            <option value="pos">POS</option>
+            {/* <option value="pos">POS</option>*/}
           </select>
         </div>
       </div>

@@ -17,7 +17,7 @@ export const paymentApi = baseApi.injectEndpoints({
         method: "POST",
         body,
       }),
-      invalidatesTags: ["Payments", "AgentLoans"],
+      invalidatesTags: ["Payments", "AgentLoans", "Dashboard", "TodayRepayments"],
     }),
 
     // ── GET /api/payments ─────────────────────────────────────
