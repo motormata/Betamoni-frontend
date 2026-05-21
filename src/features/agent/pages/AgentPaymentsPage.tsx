@@ -12,6 +12,12 @@ import { useToast } from "@/hooks/use-toast";
 import { getApiErrorMessage } from "@/lib/api-errors";
 import { formatCurrency } from "@/lib/formatters";
 
+function roundUpAmount(value: unknown): number {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return 0;
+  return Math.max(0, Math.ceil(num));
+}
+
 // ── Agent Payments Page ────────────────────────────────────────────
 
 export function AgentPaymentsPage() {
@@ -58,12 +64,13 @@ function RecordPaymentForm({ onSuccess }: { onSuccess: () => void }) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!loanId.trim() || !paymentMethod) return;
+    const roundedAmount = roundUpAmount(amount);
+    if (!loanId.trim() || !paymentMethod || roundedAmount < 1) return;
 
     try {
       await createPayment({
         loan_id: loanId.trim(),
-        amount: Number(amount),
+        amount: roundedAmount,
         payment_date: paymentDate,
         payment_method: paymentMethod as PaymentMethod,
         ...(repaymentScheduleId.trim() && {
@@ -73,7 +80,7 @@ function RecordPaymentForm({ onSuccess }: { onSuccess: () => void }) {
 
       toast({
         title: "Payment recorded",
-        description: `${formatCurrency(Number(amount))} was recorded for the selected loan.`,
+        description: `${formatCurrency(roundedAmount)} was recorded for the selected loan.`,
       });
       onSuccess();
     } catch {

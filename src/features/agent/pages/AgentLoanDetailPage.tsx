@@ -24,6 +24,8 @@ import { formatCurrency } from "@/lib/formatters";
 import { useToast } from "@/hooks/use-toast";
 import { getApiErrorMessage } from "@/lib/api-errors";
 
+const INSTALLMENT_TOLERANCE = 0.5;
+
 interface RepaymentInstallment {
   index: number;
   dueDate: Date | null;
@@ -41,6 +43,7 @@ interface ScheduleInfo {
   progressPercent: number;
   isComplete: boolean;
   frequency: string;
+  todayInstallmentIndex: number | null;
   installments: RepaymentInstallment[];
 }
 
@@ -107,6 +110,16 @@ function addInstallmentStep(baseDate: Date, frequency: string, step: number): Da
   return nextWorkingDay(nextDate);
 }
 
+function isSameDay(left: Date | null, right: Date): boolean {
+  return left?.getTime() === right.getTime();
+}
+
+function roundUpAmount(value: unknown): number {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return 0;
+  return Math.max(0, Math.ceil(num));
+}
+
 function useRepaymentSchedule(loan: AgentLoan | undefined) {
   return useMemo<ScheduleInfo | null>(() => {
     if (!loan) return null;
@@ -139,7 +152,6 @@ function useRepaymentSchedule(loan: AgentLoan | undefined) {
         ? Number(loan.installment_amount)
         : totalAmount / installmentCount;
 
-    const completedInstallments = Math.floor(amountPaid / installmentAmount);
     const progressPercent =
       totalAmount > 0 ? Math.min((amountPaid / totalAmount) * 100, 100) : 0;
     const isComplete = balance <= 0 || loan.status === "completed";
@@ -155,29 +167,76 @@ function useRepaymentSchedule(loan: AgentLoan | undefined) {
       status: "pending" as const,
     }));
 
-    const pastDueInstallments = originDate
-      ? baseInstallments.filter(
-          (installment) => installment.dueDate && installment.dueDate < today,
-        ).length
-      : 0;
+    const allocatedInstallments = new Set<number>();
+    const sortedPayments = [...(loan.payments ?? [])].sort((left, right) => {
+      const leftTime = parseLoanDate(left.payment_date)?.getTime() ?? Number.MAX_SAFE_INTEGER;
+      const rightTime = parseLoanDate(right.payment_date)?.getTime() ?? Number.MAX_SAFE_INTEGER;
 
-    const missedInstallments = Math.max(pastDueInstallments - completedInstallments, 0);
+      if (leftTime !== rightTime) return leftTime - rightTime;
+      return String(left.id).localeCompare(String(right.id));
+    });
+
+    const findNextInstallmentIndex = (paymentDate: Date | null): number | null => {
+      if (paymentDate) {
+        const dueInstallment = baseInstallments.find(
+          (installment) =>
+            !allocatedInstallments.has(installment.index) &&
+            installment.dueDate != null &&
+            installment.dueDate.getTime() <= paymentDate.getTime(),
+        );
+
+        if (dueInstallment) {
+          return dueInstallment.index;
+        }
+      }
+
+      return (
+        baseInstallments.find(
+          (installment) => !allocatedInstallments.has(installment.index),
+        )?.index ?? null
+      );
+    };
+
+    sortedPayments.forEach((payment) => {
+      const paymentDate = parseLoanDate(payment.payment_date);
+      let remainingAmount = Number(payment.amount ?? 0);
+
+      const firstInstallmentIndex = findNextInstallmentIndex(paymentDate);
+      if (firstInstallmentIndex == null) return;
+
+      allocatedInstallments.add(firstInstallmentIndex);
+      remainingAmount -= installmentAmount;
+
+      while (remainingAmount + INSTALLMENT_TOLERANCE >= installmentAmount) {
+        const extraInstallmentIndex = findNextInstallmentIndex(paymentDate);
+        if (extraInstallmentIndex == null) break;
+
+        allocatedInstallments.add(extraInstallmentIndex);
+        remainingAmount -= installmentAmount;
+      }
+    });
 
     const installments = baseInstallments.map((installment) => {
-      if (installment.index < completedInstallments) {
+      if (allocatedInstallments.has(installment.index)) {
         return { ...installment, status: "paid" as const };
       }
 
-      if (
-        installment.dueDate &&
-        installment.dueDate < today &&
-        installment.index < pastDueInstallments
-      ) {
+      if (installment.dueDate && installment.dueDate < today) {
         return { ...installment, status: "missed" as const };
       }
 
       return installment;
     });
+
+    const completedInstallments = installments.filter(
+      (installment) => installment.status === "paid",
+    ).length;
+    const missedInstallments = installments.filter(
+      (installment) => installment.status === "missed",
+    ).length;
+    const todayInstallmentIndex =
+      baseInstallments.find((installment) => isSameDay(installment.dueDate, today))?.index ??
+      null;
 
     return {
       totalAmount,
@@ -190,6 +249,7 @@ function useRepaymentSchedule(loan: AgentLoan | undefined) {
       progressPercent,
       isComplete,
       frequency,
+      todayInstallmentIndex,
       installments,
     };
   }, [loan]);
@@ -406,6 +466,13 @@ function RepaymentScheduleCard({ schedule }: { schedule: ScheduleInfo }) {
           <p className="mt-0.5 text-xl font-bold text-primary">
             {formatCurrency(schedule.installmentAmount)}
           </p>
+          <p className="mt-1 text-xs font-medium text-muted-foreground">
+            {schedule.todayInstallmentIndex != null
+              ? `Today: repayment ${schedule.todayInstallmentIndex + 1} of ${
+                  schedule.installmentCount
+                }`
+              : "Today: no repayment due"}
+          </p>
         </div>
         <div className="text-right">
           <p className="text-xs text-muted-foreground">Repayments</p>
@@ -542,26 +609,28 @@ function InlinePaymentForm({
 }) {
   const [createPayment, { isLoading, isError, error }] = useCreatePaymentMutation();
   const { toast } = useToast();
+  const roundedDefaultAmount = roundUpAmount(defaultAmount);
 
-  const [amount, setAmount] = useState(String(Math.round(defaultAmount)));
+  const [amount, setAmount] = useState(String(roundedDefaultAmount));
   const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split("T")[0]);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | "">("");
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    if (!paymentMethod) return;
+    const roundedAmount = roundUpAmount(amount);
+    if (!paymentMethod || roundedAmount < 1) return;
 
     try {
       await createPayment({
         loan_id: loanId,
-        amount: Number(amount),
+        amount: roundedAmount,
         payment_date: paymentDate,
         payment_method: paymentMethod as PaymentMethod,
       }).unwrap();
 
       toast({
         title: "Payment recorded",
-        description: `${formatCurrency(Number(amount))} has been added to this loan.`,
+        description: `${formatCurrency(roundedAmount)} has been added to this loan.`,
       });
       onSuccess();
     } catch {
@@ -581,7 +650,7 @@ function InlinePaymentForm({
           <label className="text-xs font-medium text-muted-foreground">
             Amount (₦) *
             <span className="ml-1 text-muted-foreground/60">
-              suggested: {formatCurrency(defaultAmount)}
+              suggested: {formatCurrency(roundedDefaultAmount)}
             </span>
           </label>
           <input
