@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { Users2, Plus, ChevronRight, Phone } from "lucide-react";
 import {
   useGetAgentBorrowersQuery,
@@ -12,17 +12,24 @@ import { Pagination } from "@/components/shared/Pagination";
 import { LoadingState, ErrorState, EmptyState } from "@/components/shared/FeedbackStates";
 import { useToast } from "@/hooks/use-toast";
 import { getApiErrorMessage } from "@/lib/api-errors";
+import { parsePageSearchParam, updateSearchParams } from "@/lib/listSearchParams";
 
 // ── Agent Borrowers Page ───────────────────────────────────────────
 
 export function AgentBorrowersPage() {
-  const [page, setPage] = useState(1);
   const [showForm, setShowForm] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const page = parsePageSearchParam(searchParams.get("page"));
   const { data: res, isLoading, isError } = useGetAgentBorrowersQuery(page);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const borrowers = res?.data?.data ?? [];
   const pagination = res?.data;
+
+  function handlePageChange(nextPage: number) {
+    setSearchParams(updateSearchParams(searchParams, { page: nextPage }));
+  }
 
   return (
     <div className="p-4 lg:p-6 space-y-4">
@@ -61,7 +68,12 @@ export function AgentBorrowersPage() {
             {borrowers.map((b) => (
               <li
                 key={b.id}
-                onClick={() => navigate(`/borrowers/${b.id}`)}
+                onClick={() =>
+                  navigate({
+                    pathname: `/borrowers/${b.id}`,
+                    search: location.search,
+                  })
+                }
                 className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-muted/50 cursor-pointer transition-colors"
               >
                 <div className="min-w-0 flex-1">
@@ -90,7 +102,7 @@ export function AgentBorrowersPage() {
               totalItems={pagination.total}
               fromItem={pagination.from}
               toItem={pagination.to}
-              onPageChange={setPage}
+              onPageChange={handlePageChange}
             />
           </div>
         )}

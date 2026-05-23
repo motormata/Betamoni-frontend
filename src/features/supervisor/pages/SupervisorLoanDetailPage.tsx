@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useLocation, useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
   Banknote,
@@ -24,20 +24,34 @@ import { DetailCard } from "@/components/shared/DetailCard";
 import { useToast } from "@/hooks/use-toast";
 import { getApiErrorMessage } from "@/lib/api-errors";
 import { formatCurrency } from "@/lib/formatters";
+import { hasTrackedSearchParams } from "@/lib/listSearchParams";
 
 export function SupervisorLoanDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { data: res, isLoading, isError } = useGetSupervisorLoanByIdQuery(id!, {
     skip: !id,
   });
   const loan = res?.data;
+  const loanSearchParams = new URLSearchParams(location.search);
+  const backTarget = hasTrackedSearchParams(loanSearchParams, [
+    "page",
+    "status",
+    "agent_id",
+    "market_id",
+    "from_date",
+    "to_date",
+    "search",
+  ])
+    ? { pathname: "/loans", search: location.search }
+    : "/loans";
 
   return (
     <div className="p-4 lg:p-6 space-y-4">
       <button
         type="button"
-        onClick={() => navigate("/loans")}
+        onClick={() => navigate(backTarget)}
         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
       >
         <ArrowLeft className="h-4 w-4" />

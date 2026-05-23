@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import {
   Banknote,
   ChevronRight,
@@ -24,19 +24,26 @@ import {
 } from "@/components/shared/FeedbackStates";
 import { CopyButton } from "@/components/shared/CopyButton";
 import { formatCurrency } from "@/lib/formatters";
+import { parsePageSearchParam, updateSearchParams } from "@/lib/listSearchParams";
 import type { AgentLoan } from "@/types/agent.types";
 import type { LoanProduct } from "@/types/product.types";
 import { useToast } from "@/hooks/use-toast";
 import { getApiErrorMessage } from "@/lib/api-errors";
 
 export function AgentLoansPage() {
-  const [page, setPage] = useState(1);
   const [showForm, setShowForm] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const page = parsePageSearchParam(searchParams.get("page"));
   const { data: res, isLoading, isError } = useGetAgentLoansQuery(page);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const loans = res?.data?.data ?? [];
   const pagination = res?.data;
+
+  function handlePageChange(nextPage: number) {
+    setSearchParams(updateSearchParams(searchParams, { page: nextPage }));
+  }
 
   return (
     <div className="p-4 lg:p-6 space-y-4">
@@ -71,7 +78,12 @@ export function AgentLoansPage() {
               {loans.map((loan) => (
                 <li
                   key={loan.id}
-                  onClick={() => navigate(`/loans/${loan.id}`)}
+                  onClick={() =>
+                    navigate({
+                      pathname: `/loans/${loan.id}`,
+                      search: location.search,
+                    })
+                  }
                   className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-muted/50"
                 >
                   <div className="min-w-0 flex-1">
@@ -107,7 +119,7 @@ export function AgentLoansPage() {
               totalItems={pagination.total}
               fromItem={pagination.from}
               toItem={pagination.to}
-              onPageChange={setPage}
+              onPageChange={handlePageChange}
             />
           </div>
         )}

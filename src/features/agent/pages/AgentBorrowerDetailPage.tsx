@@ -1,4 +1,4 @@
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
   ArrowUpRight,
@@ -15,6 +15,7 @@ import { useGetAgentBorrowerByIdQuery } from "@/api/endpoints/agentApi";
 import { ErrorState, LoadingState } from "@/components/shared/FeedbackStates";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { formatCurrency } from "@/lib/formatters";
+import { hasTrackedSearchParams } from "@/lib/listSearchParams";
 import type { AgentLoan, Borrower } from "@/types/agent.types";
 
 interface BorrowerPerformanceSummary {
@@ -32,16 +33,21 @@ interface BorrowerPerformanceSummary {
 export function AgentBorrowerDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { data: res, isLoading, isError } = useGetAgentBorrowerByIdQuery(id!, { skip: !id });
   const borrower = res?.data;
   const loans = borrower ? getBorrowerLoans(borrower) : [];
   const performance = buildBorrowerPerformance(loans);
+  const borrowerSearchParams = new URLSearchParams(location.search);
+  const backTarget = hasTrackedSearchParams(borrowerSearchParams, ["page"])
+    ? { pathname: "/borrowers", search: location.search }
+    : "/borrowers";
 
   return (
     <div className="p-4 lg:p-6 space-y-4">
       <button
         type="button"
-        onClick={() => navigate("/borrowers")}
+        onClick={() => navigate(backTarget)}
         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" />

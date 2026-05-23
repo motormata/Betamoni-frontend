@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { CreditCard, Search, Filter, Trash2, Plus } from "lucide-react";
 import {
   useCreatePaymentMutation,
@@ -11,6 +12,11 @@ import { LoadingState, ErrorState, EmptyState } from "@/components/shared/Feedba
 import { useToast } from "@/hooks/use-toast";
 import { getApiErrorMessage } from "@/lib/api-errors";
 import { formatCurrency } from "@/lib/formatters";
+import {
+  getSearchParamValue,
+  parsePageSearchParam,
+  updateSearchParams,
+} from "@/lib/listSearchParams";
 
 function roundUpAmount(value: unknown): number {
   const num = Number(value);
@@ -181,35 +187,53 @@ function RecordPaymentForm({ onSuccess }: { onSuccess: () => void }) {
 // ── Payment History ────────────────────────────────────────────────
 
 function PaymentHistory() {
-  const [loanId, setLoanId] = useState("");
-  const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const appliedLoanId = getSearchParamValue(searchParams, "loan_id") ?? "";
+  const appliedFromDate = getSearchParamValue(searchParams, "from_date") ?? "";
+  const appliedToDate = getSearchParamValue(searchParams, "to_date") ?? "";
+  const page = parsePageSearchParam(searchParams.get("page"));
+  const [loanId, setLoanId] = useState(appliedLoanId);
+  const [fromDate, setFromDate] = useState(appliedFromDate);
+  const [toDate, setToDate] = useState(appliedToDate);
   const [showFilters, setShowFilters] = useState(false);
 
-  const [filters, setFilters] = useState<{
+  useEffect(() => {
+    setLoanId(appliedLoanId);
+    setFromDate(appliedFromDate);
+    setToDate(appliedToDate);
+  }, [appliedFromDate, appliedLoanId, appliedToDate]);
+
+  const filters: {
     page: number;
     loan_id?: string;
     from_date?: string;
     to_date?: string;
-  }>({ page: 1 });
+  } = {
+    page,
+    ...(appliedLoanId && { loan_id: appliedLoanId }),
+    ...(appliedFromDate && { from_date: appliedFromDate }),
+    ...(appliedToDate && { to_date: appliedToDate }),
+  };
 
   const { data: res, isLoading, isError, isFetching } = useGetPaymentsQuery(filters);
 
   function handleSearch(e?: React.FormEvent) {
     if (e) e.preventDefault();
-    setFilters({
-      page: 1,
-      ...(loanId.trim() && { loan_id: loanId.trim() }),
-      ...(fromDate && { from_date: fromDate }),
-      ...(toDate && { to_date: toDate }),
-    });
+    setSearchParams(
+      updateSearchParams(searchParams, {
+        page: 1,
+        loan_id: loanId.trim(),
+        from_date: fromDate,
+        to_date: toDate,
+      }),
+    );
   }
 
   function clearFilters() {
     setLoanId("");
     setFromDate("");
     setToDate("");
-    setFilters({ page: 1 });
+    setSearchParams(new URLSearchParams());
   }
 
   const payments = res?.data?.data ?? [];
@@ -398,7 +422,9 @@ function PaymentHistory() {
               totalItems={pagination.total}
               fromItem={pagination.from}
               toItem={pagination.to}
-              onPageChange={(p) => setFilters((prev) => ({ ...prev, page: p }))}
+              onPageChange={(nextPage) =>
+                setSearchParams(updateSearchParams(searchParams, { page: nextPage }))
+              }
             />
           </div>
         )}
