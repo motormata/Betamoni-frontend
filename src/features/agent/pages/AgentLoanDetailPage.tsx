@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import {
   AlertCircle,
   ArrowLeft,
@@ -23,6 +23,7 @@ import { ErrorState, LoadingState } from "@/components/shared/FeedbackStates";
 import { formatCurrency } from "@/lib/formatters";
 import { useToast } from "@/hooks/use-toast";
 import { getApiErrorMessage } from "@/lib/api-errors";
+import { hasTrackedSearchParams } from "@/lib/listSearchParams";
 
 const INSTALLMENT_TOLERANCE = 0.5;
 
@@ -258,6 +259,7 @@ function useRepaymentSchedule(loan: AgentLoan | undefined) {
 export function AgentLoanDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { data: res, isLoading, isError, refetch } = useGetAgentLoanByIdQuery(id!, {
     skip: !id,
   });
@@ -270,12 +272,16 @@ export function AgentLoanDetailPage() {
     normalizedStatus === "active" ||
     normalizedStatus === "disbursed" ||
     normalizedStatus === "defaulted";
+  const loanSearchParams = new URLSearchParams(location.search);
+  const backTarget = hasTrackedSearchParams(loanSearchParams, ["page"])
+    ? { pathname: "/loans", search: location.search }
+    : "/loans";
 
   return (
     <div className="p-4 lg:p-6 space-y-4">
       <button
         type="button"
-        onClick={() => navigate("/loans")}
+        onClick={() => navigate(backTarget)}
         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
       >
         <ArrowLeft className="h-4 w-4" />

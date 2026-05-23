@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { Banknote, ChevronRight, User2, UserCog, Filter, Search, Trash2, Package } from "lucide-react";
 import { useGetSupervisorLoansQuery, useGetAgentsPerformanceQuery } from "@/api/endpoints/supervisorApi";
 import { useGetClusterMarketsQuery } from "@/api/endpoints/clustersApi";
@@ -10,6 +10,11 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Pagination } from "@/components/shared/Pagination";
 import { LoadingState, ErrorState, EmptyState } from "@/components/shared/FeedbackStates";
 import { formatCurrency } from "@/lib/formatters";
+import {
+  getSearchParamValue,
+  parsePageSearchParam,
+  updateSearchParams,
+} from "@/lib/listSearchParams";
 
 // ── Loan Status Options ────────────────────────────────────────────
 
@@ -27,18 +32,51 @@ const LOAN_STATUSES = [
 
 export function SupervisorLoansPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const appliedStatus = getSearchParamValue(searchParams, "status") ?? "";
+  const appliedAgentId = getSearchParamValue(searchParams, "agent_id") ?? "";
+  const appliedMarketId = getSearchParamValue(searchParams, "market_id") ?? "";
+  const appliedFromDate = getSearchParamValue(searchParams, "from_date") ?? "";
+  const appliedToDate = getSearchParamValue(searchParams, "to_date") ?? "";
+  const appliedSearch = getSearchParamValue(searchParams, "search") ?? "";
+  const page = parsePageSearchParam(searchParams.get("page"));
 
   // ── Filter local state (inputs) ──────────────────────────────
-  const [status, setStatus] = useState("");
-  const [agentId, setAgentId] = useState("");
-  const [marketId, setMarketId] = useState("");
-  const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState("");
-  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState(appliedStatus);
+  const [agentId, setAgentId] = useState(appliedAgentId);
+  const [marketId, setMarketId] = useState(appliedMarketId);
+  const [fromDate, setFromDate] = useState(appliedFromDate);
+  const [toDate, setToDate] = useState(appliedToDate);
+  const [search, setSearch] = useState(appliedSearch);
   const [showFilters, setShowFilters] = useState(false);
 
   // ── Applied filters (sent to API) ────────────────────────────
-  const [filters, setFilters] = useState<SupervisorLoansQueryParams>({ page: 1 });
+  useEffect(() => {
+    setStatus(appliedStatus);
+    setAgentId(appliedAgentId);
+    setMarketId(appliedMarketId);
+    setFromDate(appliedFromDate);
+    setToDate(appliedToDate);
+    setSearch(appliedSearch);
+  }, [
+    appliedAgentId,
+    appliedFromDate,
+    appliedMarketId,
+    appliedSearch,
+    appliedStatus,
+    appliedToDate,
+  ]);
+
+  const filters: SupervisorLoansQueryParams = {
+    page,
+    ...(appliedStatus && { status: appliedStatus }),
+    ...(appliedAgentId && { agent_id: appliedAgentId }),
+    ...(appliedMarketId && { market_id: appliedMarketId }),
+    ...(appliedFromDate && { from_date: appliedFromDate }),
+    ...(appliedToDate && { to_date: appliedToDate }),
+    ...(appliedSearch && { search: appliedSearch }),
+  };
 
   // ── Queries ──────────────────────────────────────────────────
   const { data: res, isLoading, isError, isFetching } = useGetSupervisorLoansQuery(filters);
@@ -56,15 +94,17 @@ export function SupervisorLoansPage() {
   // ── Actions ──────────────────────────────────────────────────
   function applyFilters(e?: React.FormEvent) {
     if (e) e.preventDefault();
-    setFilters({
-      page: 1,
-      ...(status && { status }),
-      ...(agentId && { agent_id: agentId }),
-      ...(marketId && { market_id: marketId }),
-      ...(fromDate && { from_date: fromDate }),
-      ...(toDate && { to_date: toDate }),
-      ...(search.trim() && { search: search.trim() }),
-    });
+    setSearchParams(
+      updateSearchParams(searchParams, {
+        page: 1,
+        status,
+        agent_id: agentId,
+        market_id: marketId,
+        from_date: fromDate,
+        to_date: toDate,
+        search: search.trim(),
+      }),
+    );
   }
 
   function clearFilters() {
@@ -74,7 +114,7 @@ export function SupervisorLoansPage() {
     setFromDate("");
     setToDate("");
     setSearch("");
-    setFilters({ page: 1 });
+    setSearchParams(new URLSearchParams());
   }
 
   const hasActiveFilters = Boolean(
@@ -275,7 +315,12 @@ export function SupervisorLoansPage() {
             {loans.map((loan) => (
               <li
                 key={loan.id}
-                onClick={() => navigate(`/loans/${loan.id}`)}
+                onClick={() =>
+                  navigate({
+                    pathname: `/loans/${loan.id}`,
+                    search: location.search,
+                  })
+                }
                 className="flex items-center justify-between gap-3 px-4 py-3.5 hover:bg-muted/50 cursor-pointer transition-colors"
               >
                 <div className="min-w-0 flex-1">
@@ -326,7 +371,9 @@ export function SupervisorLoansPage() {
               totalItems={pagination.total}
               fromItem={pagination.from}
               toItem={pagination.to}
-              onPageChange={(p) => setFilters((prev) => ({ ...prev, page: p }))}
+              onPageChange={(nextPage) =>
+                setSearchParams(updateSearchParams(searchParams, { page: nextPage }))
+              }
             />
           </div>
         )}
