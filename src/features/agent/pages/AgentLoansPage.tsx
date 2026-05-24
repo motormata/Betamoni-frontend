@@ -1,17 +1,21 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import {
   Banknote,
   ChevronRight,
   Clock,
+  Filter,
   Package,
   Plus,
+  Search,
+  Trash2,
   TrendingUp,
 } from "lucide-react";
 import {
   useCreateAgentLoanMutation,
   useGetAgentBorrowersQuery,
   useGetAgentLoansQuery,
+  useLazyGetAgentBorrowersQuery,
 } from "@/api/endpoints/agentApi";
 import { useGetAgentProductsQuery } from "@/api/endpoints/productsApi";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -23,7 +27,11 @@ import {
   LoadingState,
 } from "@/components/shared/FeedbackStates";
 import { formatCurrency } from "@/lib/formatters";
-import { parsePageSearchParam, updateSearchParams } from "@/lib/listSearchParams";
+import {
+  getSearchParamValue,
+  parsePageSearchParam,
+  updateSearchParams,
+} from "@/lib/listSearchParams";
 import {
   getAgentLoanDailyActivityStatus,
   isRepayableAgentLoanStatus,
@@ -32,19 +40,147 @@ import {
   type AgentLoanDailyActivityStatus,
 } from "@/lib/agentLoanDailyActivity";
 import { useAppSelector } from "@/store/hooks";
-import type { AgentLoan } from "@/types/agent.types";
+import type {
+  AgentLoan,
+  AgentLoansQueryParams,
+  Borrower,
+} from "@/types/agent.types";
 import type { LoanProduct } from "@/types/product.types";
 import { useToast } from "@/hooks/use-toast";
 import { getApiErrorMessage } from "@/lib/api-errors";
 
+const LOAN_STATUSES = [
+  { value: "pending", label: "Pending" },
+  { value: "approved", label: "Approved" },
+  { value: "active", label: "Active" },
+  { value: "rejected", label: "Rejected" },
+  { value: "disbursed", label: "Disbursed" },
+  { value: "completed", label: "Completed" },
+  { value: "defaulted", label: "Defaulted" },
+];
+
+function getBorrowerFullName(borrower: Pick<Borrower, "full_name" | "first_name" | "last_name">): string {
+  return borrower.full_name?.trim() || `${borrower.first_name} ${borrower.last_name}`.trim();
+}
+
+function mergeBorrowers(borrowers: Borrower[]): Borrower[] {
+  const seenBorrowerIds = new Set<string>();
+  const merged: Borrower[] = [];
+
+  borrowers.forEach((borrower) => {
+    const borrowerId = String(borrower.id);
+    if (seenBorrowerIds.has(borrowerId)) {
+      return;
+    }
+
+    seenBorrowerIds.add(borrowerId);
+    merged.push(borrower);
+  });
+
+  return merged;
+}
+
+function useAllAgentBorrowers() {
+  const { data: borrowersRes, isLoading: initialLoading } = useGetAgentBorrowersQuery(1);
+  const [fetchBorrowersPage] = useLazyGetAgentBorrowersQuery();
+  const [borrowers, setBorrowers] = useState<Borrower[]>([]);
+  const [isLoadingAllPages, setIsLoadingAllPages] = useState(false);
+
+  useEffect(() => {
+    const firstPage = borrowersRes?.data;
+    if (!firstPage) {
+      setBorrowers([]);
+      setIsLoadingAllPages(false);
+      return;
+    }
+
+    const firstPageBorrowers = firstPage.data ?? [];
+    const currentPage = firstPage.current_page ?? 1;
+    const lastPage = firstPage.last_page ?? 1;
+    let isCancelled = false;
+
+    setBorrowers(mergeBorrowers(firstPageBorrowers));
+
+    if (lastPage <= currentPage) {
+      setIsLoadingAllPages(false);
+      return;
+    }
+
+    setIsLoadingAllPages(true);
+
+    void (async () => {
+      const mergedPages = [...firstPageBorrowers];
+
+      for (let nextPage = currentPage + 1; nextPage <= lastPage; nextPage += 1) {
+        try {
+          const response = await fetchBorrowersPage(nextPage).unwrap();
+          if (isCancelled) return;
+
+          mergedPages.push(...(response.data?.data ?? []));
+        } catch {
+          if (!isCancelled) {
+            setIsLoadingAllPages(false);
+          }
+          return;
+        }
+      }
+
+      if (!isCancelled) {
+        setBorrowers(mergeBorrowers(mergedPages));
+        setIsLoadingAllPages(false);
+      }
+    })();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [borrowersRes, fetchBorrowersPage]);
+
+  return {
+    borrowers,
+    isLoading: initialLoading || isLoadingAllPages,
+  };
+}
+
 export function AgentLoansPage() {
   const [showForm, setShowForm] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
-  const page = parsePageSearchParam(searchParams.get("page"));
-  const { data: res, isLoading, isError } = useGetAgentLoansQuery(page);
   const navigate = useNavigate();
   const location = useLocation();
   const agentId = useAppSelector((state) => state.auth.user?.id);
+  const appliedStatus = getSearchParamValue(searchParams, "status") ?? "";
+  const appliedBorrowerId = getSearchParamValue(searchParams, "borrower_id") ?? "";
+  const appliedFromDate = getSearchParamValue(searchParams, "from_date") ?? "";
+  const appliedToDate = getSearchParamValue(searchParams, "to_date") ?? "";
+  const appliedSearch = getSearchParamValue(searchParams, "search") ?? "";
+  const page = parsePageSearchParam(searchParams.get("page"));
+
+  const [status, setStatus] = useState(appliedStatus);
+  const [borrowerId, setBorrowerId] = useState(appliedBorrowerId);
+  const [fromDate, setFromDate] = useState(appliedFromDate);
+  const [toDate, setToDate] = useState(appliedToDate);
+  const [search, setSearch] = useState(appliedSearch);
+  const [showFilters, setShowFilters] = useState(false);
+
+  useEffect(() => {
+    setStatus(appliedStatus);
+    setBorrowerId(appliedBorrowerId);
+    setFromDate(appliedFromDate);
+    setToDate(appliedToDate);
+    setSearch(appliedSearch);
+  }, [appliedBorrowerId, appliedFromDate, appliedSearch, appliedStatus, appliedToDate]);
+
+  const filters: AgentLoansQueryParams = {
+    page,
+    ...(appliedStatus && { status: appliedStatus }),
+    ...(appliedBorrowerId && { borrower_id: appliedBorrowerId }),
+    ...(appliedFromDate && { from_date: appliedFromDate }),
+    ...(appliedToDate && { to_date: appliedToDate }),
+    ...(appliedSearch && { search: appliedSearch }),
+  };
+
+  const { data: res, isLoading, isError, isFetching } = useGetAgentLoansQuery(filters);
+  const { borrowers, isLoading: borrowersLoading } = useAllAgentBorrowers();
 
   const loans = res?.data?.data ?? [];
   const pagination = res?.data;
@@ -53,9 +189,41 @@ export function AgentLoansPage() {
     [agentId, loans],
   );
 
+  function applyFilters(event?: React.FormEvent) {
+    if (event) event.preventDefault();
+
+    setSearchParams(
+      updateSearchParams(searchParams, {
+        page: 1,
+        status,
+        borrower_id: borrowerId,
+        from_date: fromDate,
+        to_date: toDate,
+        search: search.trim(),
+      }),
+    );
+  }
+
+  function clearFilters() {
+    setStatus("");
+    setBorrowerId("");
+    setFromDate("");
+    setToDate("");
+    setSearch("");
+    setSearchParams(new URLSearchParams());
+  }
+
   function handlePageChange(nextPage: number) {
     setSearchParams(updateSearchParams(searchParams, { page: nextPage }));
   }
+
+  const hasActiveFilters = Boolean(
+    filters.status ||
+      filters.borrower_id ||
+      filters.from_date ||
+      filters.to_date ||
+      filters.search,
+  );
 
   return (
     <div className="p-4 lg:p-6 space-y-4">
@@ -77,22 +245,175 @@ export function AgentLoansPage() {
 
       {showForm && <CreateLoanForm onSuccess={() => setShowForm(false)} />}
 
+      <div className="rounded-xl border bg-card overflow-hidden">
+        <div
+          onClick={() => setShowFilters((prev) => !prev)}
+          className="px-4 py-3 flex items-center justify-between cursor-pointer md:cursor-default md:pointer-events-none"
+        >
+          <p className="text-sm font-semibold text-foreground">Filter loans</p>
+          <div className="flex items-center gap-3">
+            <div className="hidden md:flex items-center gap-2 pointer-events-auto">
+              {hasActiveFilters && (
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    clearFilters();
+                  }}
+                  className="inline-flex items-center justify-center rounded-lg p-2 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                  aria-label="Clear filters"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  applyFilters();
+                }}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-foreground/10 px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:bg-foreground/20"
+              >
+                <Search className="h-3.5 w-3.5" />
+                Search
+              </button>
+            </div>
+
+            <div className="md:hidden pointer-events-auto flex items-center gap-2">
+              {hasActiveFilters && (
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    clearFilters();
+                  }}
+                  className="rounded-md p-1 text-destructive transition-colors hover:bg-destructive/10"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              )}
+              <div className="rounded-lg bg-muted p-1.5 text-foreground">
+                <Filter className="h-4 w-4" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div
+          className={`px-4 pb-4 md:block border-t border-border/40 md:border-t-0 space-y-3 md:space-y-0 ${
+            showFilters ? "block" : "hidden"
+          }`}
+        >
+          <div className="md:hidden pt-2 flex justify-end">
+            <button
+              type="button"
+              onClick={() => {
+                applyFilters();
+                setShowFilters(false);
+              }}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+            >
+              <Search className="h-3.5 w-3.5" />
+              Apply Filter
+            </button>
+          </div>
+
+          <form
+            onSubmit={applyFilters}
+            className="flex flex-col md:flex-row md:items-end gap-3 w-full"
+          >
+            <div className="md:flex-1">
+              <label className="text-xs font-medium text-muted-foreground">Search</label>
+              <input
+                type="text"
+                placeholder="Borrower name, loan #..."
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                className="input-field mt-1 md:mt-2 text-sm"
+              />
+            </div>
+
+            <div className="md:flex-1">
+              <label className="text-xs font-medium text-muted-foreground">Status</label>
+              <select
+                value={status}
+                onChange={(event) => setStatus(event.target.value)}
+                className="input-field mt-1 md:mt-2"
+              >
+                <option value="">All</option>
+                {LOAN_STATUSES.map((loanStatus) => (
+                  <option key={loanStatus.value} value={loanStatus.value}>
+                    {loanStatus.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="md:flex-1">
+              <label className="text-xs font-medium text-muted-foreground">Borrower</label>
+              <select
+                value={borrowerId}
+                onChange={(event) => setBorrowerId(event.target.value)}
+                className="input-field mt-1 md:mt-2"
+                disabled={borrowersLoading}
+              >
+                <option value="">
+                  {borrowersLoading ? "Loading borrowers..." : "All borrowers"}
+                </option>
+                {borrowers.map((borrower) => (
+                  <option key={borrower.id} value={borrower.id}>
+                    {getBorrowerFullName(borrower)}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 md:flex md:flex-row md:flex-1">
+              <div className="w-full">
+                <label className="text-xs font-medium text-muted-foreground">From</label>
+                <input
+                  type="date"
+                  value={fromDate}
+                  onChange={(event) => setFromDate(event.target.value)}
+                  className="input-field mt-1 md:mt-2"
+                />
+              </div>
+              <div className="w-full">
+                <label className="text-xs font-medium text-muted-foreground">To</label>
+                <input
+                  type="date"
+                  value={toDate}
+                  onChange={(event) => setToDate(event.target.value)}
+                  className="input-field mt-1 md:mt-2"
+                />
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+
       <div className="overflow-hidden rounded-xl border bg-card">
         {isLoading && <LoadingState />}
         {isError && <ErrorState message="Failed to load loans" />}
         {!isLoading && !isError && loans.length === 0 && (
-          <EmptyState message="No loans yet. Create your first loan above." />
+          <EmptyState
+            message={
+              hasActiveFilters
+                ? "No loans match your filters"
+                : "No loans yet. Create your first loan above."
+            }
+          />
         )}
 
         {loans.length > 0 && (
-          <div className="custom-scrollbar max-h-[60vh] overflow-y-auto">
+          <div className="custom-scrollbar max-h-[60vh] overflow-y-auto relative">
+            {isFetching && (
+              <div className="absolute inset-x-0 top-0 h-1 bg-primary/20 animate-pulse" />
+            )}
             <SealLegend />
             <ul className="divide-y divide-border">
               {loans.map((loan) => {
-                const sealGradient = getLoanSealGradient(
-                  dailyActivity,
-                  loan,
-                );
+                const sealGradient = getLoanSealGradient(dailyActivity, loan);
                 return (
                   <li
                     key={loan.id}
@@ -110,14 +431,14 @@ export function AgentLoansPage() {
                         <p className="truncate text-sm font-bold">
                           {getLoanTitle(loan)}
                         </p>
-                        <span className="text-sm text-muted-foreground/60 font-normal">—</span>
+                        <span className="text-sm font-normal text-muted-foreground/60">-</span>
                         <p className="truncate text-sm font-bold text-foreground/85">
                           {getLoanBorrowerLabel(loan)}
                         </p>
                       </div>
                       <p className="mt-1 text-xs text-muted-foreground">
-                        {loan.repayment_frequency} · {loan.duration_days}d · {loan.interest_rate}%
-                        {loan.due_date ? ` · Due ${fmtShortDate(loan.due_date)}` : ""}
+                        {loan.repayment_frequency} - {loan.duration_days}d - {loan.interest_rate}%
+                        {loan.due_date ? ` - Due ${fmtShortDate(loan.due_date)}` : ""}
                       </p>
                     </div>
 
@@ -242,7 +563,7 @@ function SealLegend() {
   return (
     <div className="flex flex-wrap items-center gap-4 border-b border-border bg-muted/30 px-4 py-2">
       <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-        Today’s Activity:
+        Today's Activity:
       </span>
       <div className="flex items-center gap-1.5">
         <span
@@ -340,7 +661,7 @@ function CreateLoanForm({ onSuccess }: { onSuccess: () => void }) {
             </option>
             {borrowers.map((borrower) => (
               <option key={borrower.id} value={borrower.id}>
-                {borrower.first_name} {borrower.last_name} — {borrower.phone}
+                {borrower.first_name} {borrower.last_name} - {borrower.phone}
               </option>
             ))}
           </select>
@@ -358,7 +679,7 @@ function CreateLoanForm({ onSuccess }: { onSuccess: () => void }) {
             <option value="">{productsLoading ? "Loading..." : "Select a deal"}</option>
             {activeProducts.map((product) => (
               <option key={product.id} value={product.id}>
-                {product.name} — {formatCurrency(product.principal_amount)}
+                {product.name} - {formatCurrency(product.principal_amount)}
               </option>
             ))}
           </select>
@@ -397,7 +718,7 @@ function CreateLoanForm({ onSuccess }: { onSuccess: () => void }) {
             </div>
           </div>
           <p className="text-xs text-muted-foreground">
-            {freqLabel[selectedProduct.repayment_frequency]} repayment ·{" "}
+            {freqLabel[selectedProduct.repayment_frequency]} repayment -{" "}
             <span className="font-semibold text-foreground">
               {formatCurrency(selectedProduct.principal_amount * Number(quantity || 1))} total
             </span>

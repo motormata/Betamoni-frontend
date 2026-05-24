@@ -183,7 +183,7 @@ function TodayTargetCard({
       let lastPage = 1;
 
       while (currentPage <= lastPage) {
-        const response = await fetchLoansPage(currentPage).unwrap();
+        const response = await fetchLoansPage({ page: currentPage }).unwrap();
         const loans = response.data?.data ?? [];
         lastPage = response.data?.last_page ?? currentPage;
 

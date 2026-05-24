@@ -5,6 +5,7 @@ import type {
   CreateBorrowerResponse,
   CreateAgentLoanPayload,
   CreateAgentLoanResponse,
+  AgentLoansQueryParams,
   AgentBorrowersResponse,
   AgentLoansResponse,
   AgentBorrowerResponse,
@@ -74,8 +75,18 @@ export const agentApi = baseApi.injectEndpoints({
     }),
 
     // ── GET /api/agent/loans ──────────────────────────────────
-    getAgentLoans: builder.query<AgentLoansResponse, number | void>({
-      query: (page = 1) => `/api/agent/loans?page=${page}`,
+    getAgentLoans: builder.query<AgentLoansResponse, AgentLoansQueryParams | void>({
+      query: (params = {}) => {
+        const searchParams = new URLSearchParams();
+        if (params.page) searchParams.set("page", String(params.page));
+        if (params.status) searchParams.set("status", params.status);
+        if (params.borrower_id) searchParams.set("borrower_id", params.borrower_id);
+        if (params.from_date) searchParams.set("from_date", params.from_date);
+        if (params.to_date) searchParams.set("to_date", params.to_date);
+        if (params.search) searchParams.set("search", params.search);
+        const qs = searchParams.toString();
+        return `/api/agent/loans${qs ? `?${qs}` : ""}`;
+      },
       providesTags: ["AgentLoans"],
     }),
 
