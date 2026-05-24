@@ -305,7 +305,14 @@ export function AgentLoanDetailPage() {
     normalizedStatus === "disbursed" ||
     normalizedStatus === "defaulted";
   const loanSearchParams = new URLSearchParams(location.search);
-  const backTarget = hasTrackedSearchParams(loanSearchParams, ["page"])
+  const backTarget = hasTrackedSearchParams(loanSearchParams, [
+    "page",
+    "status",
+    "borrower_id",
+    "from_date",
+    "to_date",
+    "search",
+  ])
     ? { pathname: "/loans", search: location.search }
     : "/loans";
   const preferredInstallmentAmount =

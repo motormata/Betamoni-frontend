@@ -22,6 +22,15 @@ export interface CreateAgentLoanPayload {
   quantity: number;
 }
 
+export interface AgentLoansQueryParams {
+  page?: number;
+  status?: string;
+  borrower_id?: UUID;
+  from_date?: string;
+  to_date?: string;
+  search?: string;
+}
+
 // ── Response Data Types ────────────────────────────────────────────
 
 export interface Borrower {
