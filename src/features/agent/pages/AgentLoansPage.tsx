@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import {
   Banknote,
@@ -22,9 +22,16 @@ import {
   ErrorState,
   LoadingState,
 } from "@/components/shared/FeedbackStates";
-import { CopyButton } from "@/components/shared/CopyButton";
 import { formatCurrency } from "@/lib/formatters";
 import { parsePageSearchParam, updateSearchParams } from "@/lib/listSearchParams";
+import {
+  getAgentLoanDailyActivityStatus,
+  isRepayableAgentLoanStatus,
+  readAgentLoanDailyActivity,
+  type AgentLoanDailyActivity,
+  type AgentLoanDailyActivityStatus,
+} from "@/lib/agentLoanDailyActivity";
+import { useAppSelector } from "@/store/hooks";
 import type { AgentLoan } from "@/types/agent.types";
 import type { LoanProduct } from "@/types/product.types";
 import { useToast } from "@/hooks/use-toast";
@@ -37,9 +44,14 @@ export function AgentLoansPage() {
   const { data: res, isLoading, isError } = useGetAgentLoansQuery(page);
   const navigate = useNavigate();
   const location = useLocation();
+  const agentId = useAppSelector((state) => state.auth.user?.id);
 
   const loans = res?.data?.data ?? [];
   const pagination = res?.data;
+  const dailyActivity = useMemo(
+    () => readAgentLoanDailyActivity(agentId),
+    [agentId, loans],
+  );
 
   function handlePageChange(nextPage: number) {
     setSearchParams(updateSearchParams(searchParams, { page: nextPage }));
@@ -74,39 +86,50 @@ export function AgentLoansPage() {
 
         {loans.length > 0 && (
           <div className="custom-scrollbar max-h-[60vh] overflow-y-auto">
+            <SealLegend />
             <ul className="divide-y divide-border">
-              {loans.map((loan) => (
-                <li
-                  key={loan.id}
-                  onClick={() =>
-                    navigate({
-                      pathname: `/loans/${loan.id}`,
-                      search: location.search,
-                    })
-                  }
-                  className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-muted/50"
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="truncate text-sm font-semibold">
-                        {getLoanTitle(loan)}
+              {loans.map((loan) => {
+                const sealGradient = getLoanSealGradient(
+                  dailyActivity,
+                  loan,
+                );
+                return (
+                  <li
+                    key={loan.id}
+                    onClick={() =>
+                      navigate({
+                        pathname: `/loans/${loan.id}`,
+                        search: location.search,
+                      })
+                    }
+                    className="flex cursor-pointer items-center gap-3 px-4 py-3 transition-all hover:brightness-95"
+                    style={sealGradient}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-baseline gap-1.5">
+                        <p className="truncate text-sm font-bold">
+                          {getLoanTitle(loan)}
+                        </p>
+                        <span className="text-sm text-muted-foreground/60 font-normal">—</span>
+                        <p className="truncate text-sm font-bold text-foreground/85">
+                          {getLoanBorrowerLabel(loan)}
+                        </p>
+                      </div>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {loan.repayment_frequency} · {loan.duration_days}d · {loan.interest_rate}%
+                        {loan.due_date ? ` · Due ${fmtShortDate(loan.due_date)}` : ""}
                       </p>
+                    </div>
+
+                    <div className="flex shrink-0 items-center gap-1.5">
                       <StatusBadge status={loan.status} />
                       <LoanDueBadge loan={loan} />
-                      <CopyButton text={loan.id} />
                     </div>
-                    <p className="mt-0.5 truncate text-xs font-medium text-foreground/80">
-                      {getLoanBorrowerLabel(loan)}
-                    </p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      {/* {loan.loan_number ? `${loan.loan_number} · ` : ""} */}
-                      {loan.repayment_frequency} · {loan.duration_days}d · {loan.interest_rate}%
-                      {loan.due_date ? ` · Due ${fmtShortDate(loan.due_date)}` : ""}
-                    </p>
-                  </div>
-                  <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-                </li>
-              ))}
+
+                    <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  </li>
+                );
+              })}
             </ul>
           </div>
         )}
@@ -135,15 +158,11 @@ function getLoanTitle(loan: AgentLoan): string {
 }
 
 function getLoanBorrowerLabel(loan: AgentLoan): string {
-  const borrowerName =
+  return (
     loan.borrower?.full_name ??
-    (loan.borrower ? `${loan.borrower.first_name} ${loan.borrower.last_name}` : null);
-
-  if (borrowerName && loan.borrower?.phone) {
-    return `${borrowerName} · ${loan.borrower.phone}`;
-  }
-
-  return borrowerName ?? "Borrower details unavailable";
+    (loan.borrower ? `${loan.borrower.first_name} ${loan.borrower.last_name}` : null) ??
+    "Borrower details unavailable"
+  );
 }
 
 function fmtShortDate(value: string): string {
@@ -190,6 +209,64 @@ function LoanDueBadge({ loan }: { loan: AgentLoan }) {
   }
 
   return null;
+}
+
+const SEAL_GRADIENTS: Record<
+  AgentLoanDailyActivityStatus,
+  { background: string; title: string }
+> = {
+  unopened: {
+    background: "linear-gradient(90deg, hsl(38 92% 50% / 0.22) 0%, transparent 55%)",
+    title: "Loan has not been opened today",
+  },
+  opened: {
+    background: "linear-gradient(90deg, hsl(210 100% 56% / 0.20) 0%, transparent 55%)",
+    title: "Loan has been opened today",
+  },
+  paid: {
+    background: "linear-gradient(90deg, hsl(142 71% 45% / 0.22) 0%, transparent 55%)",
+    title: "Payment has been recorded today",
+  },
+};
+
+function getLoanSealGradient(
+  activity: AgentLoanDailyActivity,
+  loan: AgentLoan,
+): React.CSSProperties | undefined {
+  if (!isRepayableAgentLoanStatus(loan.status)) return undefined;
+  const status = getAgentLoanDailyActivityStatus(activity, loan.id);
+  return { background: SEAL_GRADIENTS[status].background };
+}
+
+function SealLegend() {
+  return (
+    <div className="flex flex-wrap items-center gap-4 border-b border-border bg-muted/30 px-4 py-2">
+      <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+        Today’s Activity:
+      </span>
+      <div className="flex items-center gap-1.5">
+        <span
+          className="inline-block h-2.5 w-6 rounded-sm"
+          style={{ background: "linear-gradient(90deg, hsl(38 92% 50% / 0.35), hsl(38 92% 50% / 0.08))" }}
+        />
+        <span className="text-[11px] text-muted-foreground">Unopened</span>
+      </div>
+      <div className="flex items-center gap-1.5">
+        <span
+          className="inline-block h-2.5 w-6 rounded-sm"
+          style={{ background: "linear-gradient(90deg, hsl(210 100% 56% / 0.35), hsl(210 100% 56% / 0.08))" }}
+        />
+        <span className="text-[11px] text-muted-foreground">Opened</span>
+      </div>
+      <div className="flex items-center gap-1.5">
+        <span
+          className="inline-block h-2.5 w-6 rounded-sm"
+          style={{ background: "linear-gradient(90deg, hsl(142 71% 45% / 0.40), hsl(142 71% 45% / 0.10))" }}
+        />
+        <span className="text-[11px] text-muted-foreground">Paid</span>
+      </div>
+    </div>
+  );
 }
 
 function CreateLoanForm({ onSuccess }: { onSuccess: () => void }) {

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import {
   AlertCircle,
@@ -24,6 +24,12 @@ import { formatCurrency } from "@/lib/formatters";
 import { useToast } from "@/hooks/use-toast";
 import { getApiErrorMessage } from "@/lib/api-errors";
 import { hasTrackedSearchParams } from "@/lib/listSearchParams";
+import {
+  isRepayableAgentLoanStatus,
+  markAgentLoanOpened,
+  markAgentLoanPaid,
+} from "@/lib/agentLoanDailyActivity";
+import { useAppSelector } from "@/store/hooks";
 
 const INSTALLMENT_TOLERANCE = 0.5;
 
@@ -121,6 +127,34 @@ function roundUpAmount(value: unknown): number {
   return Math.max(0, Math.ceil(num));
 }
 
+function readPositiveNumber(value: unknown): number | null {
+  const num = Number(value);
+  return Number.isFinite(num) && num > 0 ? num : null;
+}
+
+function getBackendInstallmentAmount(loan: AgentLoan | undefined): number | null {
+  if (!loan) return null;
+
+  const looseLoan = loan as AgentLoan & { installmentAmount?: unknown };
+  return readPositiveNumber(loan.installment_amount) ?? readPositiveNumber(looseLoan.installmentAmount);
+}
+
+function normalizePaymentDate(value: string | null | undefined): string | null {
+  if (!value) return null;
+
+  const dateMatch = value.match(/^\d{4}-\d{2}-\d{2}/);
+  if (dateMatch) return dateMatch[0];
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return null;
+
+  return [
+    parsed.getFullYear(),
+    String(parsed.getMonth() + 1).padStart(2, "0"),
+    String(parsed.getDate()).padStart(2, "0"),
+  ].join("-");
+}
+
 function useRepaymentSchedule(loan: AgentLoan | undefined) {
   return useMemo<ScheduleInfo | null>(() => {
     if (!loan) return null;
@@ -148,10 +182,7 @@ function useRepaymentSchedule(loan: AgentLoan | undefined) {
         break;
     }
 
-    const installmentAmount =
-      loan.installment_amount != null && Number(loan.installment_amount) > 0
-        ? Number(loan.installment_amount)
-        : totalAmount / installmentCount;
+    const installmentAmount = getBackendInstallmentAmount(loan) ?? totalAmount / installmentCount;
 
     const progressPercent =
       totalAmount > 0 ? Math.min((amountPaid / totalAmount) * 100, 100) : 0;
@@ -260,6 +291,7 @@ export function AgentLoanDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
+  const agentId = useAppSelector((state) => state.auth.user?.id);
   const { data: res, isLoading, isError, refetch } = useGetAgentLoanByIdQuery(id!, {
     skip: !id,
   });
@@ -276,6 +308,14 @@ export function AgentLoanDetailPage() {
   const backTarget = hasTrackedSearchParams(loanSearchParams, ["page"])
     ? { pathname: "/loans", search: location.search }
     : "/loans";
+  const preferredInstallmentAmount =
+    getBackendInstallmentAmount(loan) ?? schedule?.installmentAmount ?? 0;
+
+  useEffect(() => {
+    if (!loan || !isRepayableAgentLoanStatus(loan.status)) return;
+
+    markAgentLoanOpened(agentId, loan.id);
+  }, [agentId, loan]);
 
   return (
     <div className="p-4 lg:p-6 space-y-4">
@@ -367,7 +407,9 @@ export function AgentLoanDetailPage() {
           {showPaymentForm && (
             <InlinePaymentForm
               loanId={id!}
-              defaultAmount={schedule.installmentAmount}
+              agentId={agentId}
+              defaultAmount={preferredInstallmentAmount}
+              payments={loan.payments ?? []}
               onSuccess={() => {
                 setShowPaymentForm(false);
                 refetch();
@@ -606,11 +648,15 @@ function PaymentHistoryCard({ payments }: { payments: NonNullable<AgentLoan["pay
 
 function InlinePaymentForm({
   loanId,
+  agentId,
   defaultAmount,
+  payments,
   onSuccess,
 }: {
   loanId: string;
+  agentId?: string;
   defaultAmount: number;
+  payments: NonNullable<AgentLoan["payments"]>;
   onSuccess: () => void;
 }) {
   const [createPayment, { isLoading, isError, error }] = useCreatePaymentMutation();
@@ -620,11 +666,27 @@ function InlinePaymentForm({
   const [amount, setAmount] = useState(String(roundedDefaultAmount));
   const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split("T")[0]);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | "">("");
+  const [duplicatePaymentConfirmed, setDuplicatePaymentConfirmed] = useState(false);
+
+  const duplicatePayment = useMemo(
+    () =>
+      payments.find(
+        (payment) => normalizePaymentDate(payment.payment_date) === paymentDate,
+      ),
+    [paymentDate, payments],
+  );
+  const hasDuplicatePaymentDate = duplicatePayment != null;
+  const shouldBlockSubmitForDuplicate =
+    hasDuplicatePaymentDate && !duplicatePaymentConfirmed;
+
+  useEffect(() => {
+    setDuplicatePaymentConfirmed(false);
+  }, [paymentDate]);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     const roundedAmount = roundUpAmount(amount);
-    if (!paymentMethod || roundedAmount < 1) return;
+    if (!paymentMethod || roundedAmount < 1 || shouldBlockSubmitForDuplicate) return;
 
     try {
       await createPayment({
@@ -634,6 +696,7 @@ function InlinePaymentForm({
         payment_method: paymentMethod as PaymentMethod,
       }).unwrap();
 
+      markAgentLoanPaid(agentId, loanId);
       toast({
         title: "Payment recorded",
         description: `${formatCurrency(roundedAmount)} has been added to this loan.`,
@@ -696,6 +759,48 @@ function InlinePaymentForm({
         </div>
       </div>
 
+      {hasDuplicatePaymentDate && (
+        <div
+          className={`rounded-lg border px-3 py-2.5 text-xs ${
+            duplicatePaymentConfirmed
+              ? "border-warning/30 bg-warning/10 text-warning"
+              : "border-destructive/30 bg-destructive/10 text-destructive"
+          }`}
+        >
+          <div className="flex items-start gap-2">
+            <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            <div className="space-y-2">
+              <p className="font-semibold">
+                Repayment has already been recorded for {fmtDate(paymentDate)}.
+              </p>
+              <p>
+                {duplicatePaymentConfirmed
+                  ? "Duplicate date confirmed. Submitting will record another payment for this date."
+                  : "Confirm before recording another payment for the same date."}
+              </p>
+              {!duplicatePaymentConfirmed && (
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setDuplicatePaymentConfirmed(true)}
+                    className="rounded-md bg-destructive px-2.5 py-1.5 text-[11px] font-semibold text-destructive-foreground transition-colors hover:bg-destructive/90"
+                  >
+                    Record anyway
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDuplicatePaymentConfirmed(false)}
+                    className="rounded-md border border-destructive/30 px-2.5 py-1.5 text-[11px] font-semibold transition-colors hover:bg-destructive/10"
+                  >
+                    Choose another date
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {isError && (
         <p className="text-xs text-destructive">
           {getApiErrorMessage(error, "Failed to record payment")}
@@ -704,10 +809,14 @@ function InlinePaymentForm({
 
       <button
         type="submit"
-        disabled={isLoading || !paymentMethod}
+        disabled={isLoading || !paymentMethod || shouldBlockSubmitForDuplicate}
         className="w-full rounded-lg bg-primary py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
       >
-        {isLoading ? "Recording..." : "Record Payment"}
+        {isLoading
+          ? "Recording..."
+          : hasDuplicatePaymentDate && duplicatePaymentConfirmed
+          ? "Record Duplicate Payment"
+          : "Record Payment"}
       </button>
     </form>
   );
