@@ -76,7 +76,8 @@ export const agentApi = baseApi.injectEndpoints({
 
     // ── GET /api/agent/loans ──────────────────────────────────
     getAgentLoans: builder.query<AgentLoansResponse, AgentLoansQueryParams | void>({
-      query: (params = {}) => {
+      query: (rawParams) => {
+        const params: AgentLoansQueryParams = rawParams ?? {};
         const searchParams = new URLSearchParams();
         if (params.page) searchParams.set("page", String(params.page));
         if (params.status) searchParams.set("status", params.status);
