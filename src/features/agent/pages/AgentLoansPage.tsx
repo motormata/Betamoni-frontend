@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import {
   Banknote,
@@ -58,6 +58,25 @@ const LOAN_STATUSES = [
   { value: "completed", label: "Completed" },
   { value: "defaulted", label: "Defaulted" },
 ];
+
+const STICKY_DATE_CHIP_TOP_OFFSET = 40;
+
+interface LoanDisplayDateMeta {
+  key: string;
+  badgeLabel: string;
+  stickyLabel: string;
+}
+
+interface GroupedLoanItem {
+  loan: AgentLoan;
+  displayDate: LoanDisplayDateMeta;
+}
+
+interface LoanDateGroup {
+  key: string;
+  label: string;
+  items: GroupedLoanItem[];
+}
 
 function getBorrowerFullName(borrower: Pick<Borrower, "full_name" | "first_name" | "last_name">): string {
   return borrower.full_name?.trim() || `${borrower.first_name} ${borrower.last_name}`.trim();
@@ -147,6 +166,8 @@ export function AgentLoansPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const groupSentinelRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const agentId = useAppSelector((state) => state.auth.user?.id);
   const appliedStatus = getSearchParamValue(searchParams, "status") ?? "";
   const appliedBorrowerId = getSearchParamValue(searchParams, "borrower_id") ?? "";
@@ -161,6 +182,7 @@ export function AgentLoansPage() {
   const [toDate, setToDate] = useState(appliedToDate);
   const [search, setSearch] = useState(appliedSearch);
   const [showFilters, setShowFilters] = useState(false);
+  const [activeStickyDateLabel, setActiveStickyDateLabel] = useState<string | null>(null);
 
   useEffect(() => {
     setStatus(appliedStatus);
@@ -188,6 +210,91 @@ export function AgentLoansPage() {
     () => readAgentLoanDailyActivity(agentId),
     [agentId, loans],
   );
+  const groupedLoans = useMemo(() => {
+    const groups: LoanDateGroup[] = [];
+
+    loans.forEach((loan) => {
+      const displayDate = getLoanDisplayDateMeta(loan);
+      const previousGroup = groups[groups.length - 1];
+
+      if (previousGroup?.key === displayDate.key) {
+        previousGroup.items.push({ loan, displayDate });
+        return;
+      }
+
+      groups.push({
+        key: displayDate.key,
+        label: displayDate.stickyLabel,
+        items: [{ loan, displayDate }],
+      });
+    });
+
+    return groups;
+  }, [loans]);
+
+  useEffect(() => {
+    groupSentinelRefs.current = groupSentinelRefs.current.slice(0, groupedLoans.length);
+  }, [groupedLoans.length]);
+
+  useEffect(() => {
+    if (groupedLoans.length === 0) {
+      setActiveStickyDateLabel(null);
+      return;
+    }
+
+    const root = scrollContainerRef.current;
+    const sentinels = groupSentinelRefs.current.slice(0, groupedLoans.length);
+
+    if (!root || sentinels.some((sentinel) => sentinel == null)) {
+      setActiveStickyDateLabel(groupedLoans[0]?.label ?? null);
+      return;
+    }
+
+    const updateActiveStickyDate = () => {
+      const rootTop = root.getBoundingClientRect().top;
+      const threshold = rootTop + STICKY_DATE_CHIP_TOP_OFFSET;
+      let nextGroupIndex = 0;
+
+      sentinels.forEach((sentinel, index) => {
+        if (!sentinel) return;
+
+        if (sentinel.getBoundingClientRect().top <= threshold) {
+          nextGroupIndex = index;
+        }
+      });
+
+      setActiveStickyDateLabel(groupedLoans[nextGroupIndex]?.label ?? groupedLoans[0]?.label ?? null);
+    };
+
+    setActiveStickyDateLabel(groupedLoans[0]?.label ?? null);
+
+    const observer = new IntersectionObserver(
+      () => {
+        updateActiveStickyDate();
+      },
+      {
+        root,
+        threshold: 0,
+        rootMargin: `-${STICKY_DATE_CHIP_TOP_OFFSET}px 0px -${Math.max(
+          root.clientHeight - STICKY_DATE_CHIP_TOP_OFFSET - 1,
+          0,
+        )}px 0px`,
+      },
+    );
+
+    sentinels.forEach((sentinel) => {
+      if (sentinel) {
+        observer.observe(sentinel);
+      }
+    });
+
+    const frameId = window.requestAnimationFrame(updateActiveStickyDate);
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      observer.disconnect();
+    };
+  }, [groupedLoans]);
 
   function applyFilters(event?: React.FormEvent) {
     if (event) event.preventDefault();
@@ -406,51 +513,74 @@ export function AgentLoansPage() {
         )}
 
         {loans.length > 0 && (
-          <div className="custom-scrollbar max-h-[60vh] overflow-y-auto relative">
+          <div
+            ref={scrollContainerRef}
+            className="custom-scrollbar max-h-[60vh] overflow-y-auto relative"
+          >
             {isFetching && (
               <div className="absolute inset-x-0 top-0 h-1 bg-primary/20 animate-pulse" />
             )}
             <SealLegend />
+            {activeStickyDateLabel && (
+              <div className="pointer-events-none sticky top-0 z-20 px-4 py-2 bg-gradient-to-b from-card via-card/95 to-transparent backdrop-blur supports-[backdrop-filter]:bg-card/75">
+                <div className="inline-flex rounded-full border border-border/70 bg-card/95 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-foreground shadow-sm">
+                  {activeStickyDateLabel}
+                </div>
+              </div>
+            )}
             <ul className="divide-y divide-border">
-              {loans.map((loan) => {
-                const sealGradient = getLoanSealGradient(dailyActivity, loan);
-                return (
-                  <li
-                    key={loan.id}
-                    onClick={() =>
-                      navigate({
-                        pathname: `/loans/${loan.id}`,
-                        search: location.search,
-                      })
-                    }
-                    className="flex cursor-pointer items-center gap-3 px-4 py-3 transition-all hover:brightness-95"
-                    style={sealGradient}
-                  >
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-baseline gap-1.5">
-                        <p className="truncate text-sm font-bold">
-                          {getLoanTitle(loan)}
-                        </p>
-                        <span className="text-sm font-normal text-muted-foreground/60">-</span>
-                        <p className="truncate text-sm font-bold text-foreground/85">
-                          {getLoanBorrowerLabel(loan)}
-                        </p>
+              {groupedLoans.map((group, groupIndex) =>
+                group.items.map(({ loan, displayDate }, loanIndex) => {
+                  const sealGradient = getLoanSealGradient(dailyActivity, loan);
+                  return (
+                    <li
+                      key={loan.id}
+                      onClick={() =>
+                        navigate({
+                          pathname: `/loans/${loan.id}`,
+                          search: location.search,
+                        })
+                      }
+                      className="relative flex cursor-pointer items-center gap-3 px-4 py-3 transition-all hover:brightness-95"
+                      style={sealGradient}
+                    >
+                      {loanIndex === 0 && (
+                        <span
+                          ref={(node) => {
+                            groupSentinelRefs.current[groupIndex] = node;
+                          }}
+                          className="absolute inset-x-0 top-0 h-px"
+                          aria-hidden="true"
+                        />
+                      )}
+
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-baseline gap-1.5">
+                          <p className="truncate text-sm font-bold">
+                            {getLoanTitle(loan)}
+                          </p>
+                          <span className="text-sm font-normal text-muted-foreground/60">-</span>
+                          <p className="truncate text-sm font-bold text-foreground/85">
+                            {getLoanBorrowerLabel(loan)}
+                          </p>
+                        </div>
+                        <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                          <span>{loan.repayment_frequency}</span>
+                          <span>{loan.duration_days}d</span>
+                          <span>{getLoanTimelineLabel(loan, displayDate.badgeLabel)}</span>
+                        </div>
                       </div>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {loan.repayment_frequency} - {loan.duration_days}d - {loan.interest_rate}%
-                        {loan.due_date ? ` - Due ${fmtShortDate(loan.due_date)}` : ""}
-                      </p>
-                    </div>
 
-                    <div className="flex shrink-0 items-center gap-1.5">
-                      <StatusBadge status={loan.status} />
-                      <LoanDueBadge loan={loan} />
-                    </div>
+                      <div className="flex shrink-0 items-center gap-1.5">
+                        <StatusBadge status={loan.status} />
+                        <LoanDueBadge loan={loan} />
+                      </div>
 
-                    <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-                  </li>
-                );
-              })}
+                      <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    </li>
+                  );
+                }),
+              )}
             </ul>
           </div>
         )}
@@ -484,6 +614,112 @@ function getLoanBorrowerLabel(loan: AgentLoan): string {
     (loan.borrower ? `${loan.borrower.first_name} ${loan.borrower.last_name}` : null) ??
     "Borrower details unavailable"
   );
+}
+
+function getNormalizedLoanStatus(loan: AgentLoan): string {
+  return String(loan.status ?? "").toLowerCase().trim();
+}
+
+function isLoanDisbursedForDisplay(loan: AgentLoan): boolean {
+  const normalizedStatus = getNormalizedLoanStatus(loan);
+
+  if (normalizedStatus === "rejected") {
+    return false;
+  }
+
+  return Boolean(loan.disbursement_date || loan.disbursed_at);
+}
+
+function resolveLoanDisplayDateValue(loan: AgentLoan): string | null | undefined {
+  if (isLoanDisbursedForDisplay(loan)) {
+    return loan.disbursement_date ?? loan.disbursed_at ?? loan.created_at;
+  }
+
+  return loan.created_at ?? loan.disbursement_date ?? loan.disbursed_at;
+}
+
+function parseLoanDisplayDate(value: string | null | undefined): Date | null {
+  if (!value) return null;
+
+  const parsed = value.includes("T") ? new Date(value) : new Date(`${value}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) return null;
+
+  return parsed;
+}
+
+function getLoanDateKey(date: Date): string {
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0"),
+  ].join("-");
+}
+
+function formatLoanDateBadge(date: Date): string {
+  return date.toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function formatStickyLoanDate(date: Date): string {
+  return date.toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function getLoanDisplayDateMeta(loan: AgentLoan): LoanDisplayDateMeta {
+  const resolvedDate = parseLoanDisplayDate(resolveLoanDisplayDateValue(loan));
+
+  if (!resolvedDate) {
+    return {
+      key: "unknown-date",
+      badgeLabel: "Unknown date",
+      stickyLabel: "Unknown date",
+    };
+  }
+
+  return {
+    key: getLoanDateKey(resolvedDate),
+    badgeLabel: formatLoanDateBadge(resolvedDate),
+    stickyLabel: formatStickyLoanDate(resolvedDate),
+  };
+}
+
+function getLoanTimelineLabel(loan: AgentLoan, primaryDateLabel: string): string {
+  if (!isLoanDisbursedForDisplay(loan)) {
+    return `Created ${primaryDateLabel}`;
+  }
+
+  if (loan.due_date) {
+    return `Tenure ${formatLoanRangeStartLabel(resolveLoanDisplayDateValue(loan))} - ${formatLoanRangeEndLabel(loan.due_date)}`;
+  }
+
+  return `Disbursed ${primaryDateLabel}`;
+}
+
+function formatLoanRangeStartLabel(value: string | null | undefined): string {
+  const parsedDate = parseLoanDisplayDate(value);
+  if (!parsedDate) return value ?? "Unknown";
+
+  return parsedDate.toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+  });
+}
+
+function formatLoanRangeEndLabel(value: string): string {
+  const parsedDate = parseLoanDisplayDate(value);
+  if (!parsedDate) return value;
+
+  return parsedDate.toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 }
 
 function fmtShortDate(value: string): string {
