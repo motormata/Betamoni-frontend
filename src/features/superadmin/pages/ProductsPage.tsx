@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Package, Plus, CheckCircle2, XCircle, Banknote, Clock, TrendingUp } from "lucide-react";
+import { Package, Plus, CheckCircle2, XCircle, Banknote, Clock, WalletCards } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { LoadingState, ErrorState, EmptyState } from "@/components/shared/FeedbackStates";
 import { StatusBadge } from "@/components/shared/StatusBadge";
@@ -9,7 +9,7 @@ import {
 } from "@/api/endpoints/productsApi";
 import type { LoanProduct } from "@/types/product.types";
 import type { RepaymentFrequency } from "@/types/agent.types";
-import { formatCurrency } from "@/lib/formatters";
+import { formatAmountInput, formatCurrency, parseAmountInput } from "@/lib/formatters";
 import { useToast } from "@/hooks/use-toast";
 import { getApiErrorMessage } from "@/lib/api-errors";
 
@@ -113,10 +113,10 @@ function ProductCard({ product }: { product: LoanProduct }) {
         </div>
         <div className="rounded-lg bg-muted/40 p-2 text-center">
           <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide flex items-center justify-center gap-1">
-            <TrendingUp className="h-3 w-3" /> Rate
+            <WalletCards className="h-3 w-3" /> Expected
           </p>
           <p className="text-sm font-bold text-foreground mt-0.5">
-            {product.interest_rate}%
+            {formatCurrency(product.expected_amount_to_pay)}
           </p>
         </div>
         <div className="rounded-lg bg-muted/40 p-2 text-center">
@@ -153,7 +153,7 @@ function CreateProductForm({ onSuccess }: { onSuccess: () => void }) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [principal, setPrincipal] = useState("");
-  const [rate, setRate] = useState("");
+  const [expectedAmountToPay, setExpectedAmountToPay] = useState("");
   const [duration, setDuration] = useState("");
   const [frequency, setFrequency] = useState<RepaymentFrequency | "">("");
   const [isActive, setIsActive] = useState(true);
@@ -166,8 +166,8 @@ function CreateProductForm({ onSuccess }: { onSuccess: () => void }) {
       await create({
         name: name.trim(),
         description: description.trim() || undefined,
-        principal_amount: Number(principal),
-        interest_rate: Number(rate),
+        principal_amount: parseAmountInput(principal),
+        expected_amount_to_pay: parseAmountInput(expectedAmountToPay),
         duration_days: Number(duration),
         repayment_frequency: frequency,
         is_active: isActive,
@@ -217,26 +217,25 @@ function CreateProductForm({ onSuccess }: { onSuccess: () => void }) {
         <div>
           <label className="text-xs font-medium text-muted-foreground">Principal (₦) *</label>
           <input
-            type="number"
+            type="text"
+            inputMode="numeric"
             placeholder="e.g. 10000"
             value={principal}
-            onChange={(e) => setPrincipal(e.target.value)}
+            onChange={(e) => setPrincipal(formatAmountInput(e.target.value))}
             className="input-field mt-1"
-            min="1"
             required
           />
         </div>
 
         <div>
-          <label className="text-xs font-medium text-muted-foreground">Interest Rate (%) *</label>
+          <label className="text-xs font-medium text-muted-foreground">Expected Amount To Pay *</label>
           <input
-            type="number"
-            placeholder="e.g. 10"
-            value={rate}
-            onChange={(e) => setRate(e.target.value)}
+            type="text"
+            inputMode="numeric"
+            placeholder="e.g. 12000"
+            value={expectedAmountToPay}
+            onChange={(e) => setExpectedAmountToPay(formatAmountInput(e.target.value))}
             className="input-field mt-1"
-            min="0"
-            step="0.01"
             required
           />
         </div>
