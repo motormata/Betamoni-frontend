@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { Pagination } from "@/components/shared/Pagination";
 import { LoadingState, EmptyState } from "@/components/shared/FeedbackStates";
 import { useAddCapitalMutation, useGetFinanceHistoryQuery } from "@/api/endpoints/financeApi";
-import { formatCurrency } from "@/lib/formatters";
+import { formatAmountInput, formatCurrency, parseAmountInput } from "@/lib/formatters";
 import { useToast } from "@/hooks/use-toast";
 import { getApiErrorMessage } from "@/lib/api-errors";
 
@@ -119,17 +119,18 @@ function AddCapitalForm({ onSuccess }: { onSuccess: () => void }) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const parsedAmount = parseAmountInput(amount);
 
     try {
       await addCapital({
-        amount: Number(amount),
+        amount: parsedAmount,
         description: description.trim(),
         transaction_date: transactionDate,
       }).unwrap();
 
       toast({
         title: "Capital added",
-        description: `${formatCurrency(Number(amount))} has been added to the finance ledger.`,
+        description: `${formatCurrency(parsedAmount)} has been added to the finance ledger.`,
       });
       setAmount("");
       setDescription("");
@@ -151,12 +152,12 @@ function AddCapitalForm({ onSuccess }: { onSuccess: () => void }) {
         <div>
           <label className="text-xs font-medium text-muted-foreground">Amount *</label>
           <input
-            type="number"
+            type="text"
+            inputMode="numeric"
             placeholder="e.g. 1000000"
             value={amount}
-            onChange={(e) => setAmount(e.target.value)}
+            onChange={(e) => setAmount(formatAmountInput(e.target.value))}
             className="input-field mt-1"
-            min="1"
             required
           />
         </div>

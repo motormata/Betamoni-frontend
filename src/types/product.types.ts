@@ -9,7 +9,7 @@ export interface LoanProduct {
   name: string;
   description?: string;
   principal_amount: number;
-  interest_rate: number;
+  expected_amount_to_pay: number;
   duration_days: number;
   repayment_frequency: RepaymentFrequency;
   is_active: boolean;
@@ -23,7 +23,7 @@ export interface CreateLoanProductPayload {
   name: string;
   description?: string;
   principal_amount: number;
-  interest_rate: number;
+  expected_amount_to_pay: number;
   duration_days: number;
   repayment_frequency: RepaymentFrequency;
   is_active: boolean;

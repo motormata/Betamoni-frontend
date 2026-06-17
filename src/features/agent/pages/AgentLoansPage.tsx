@@ -946,7 +946,7 @@ function CreateLoanForm({ onSuccess }: { onSuccess: () => void }) {
             </div>
             <div className="flex items-center gap-1.5 text-xs">
               <TrendingUp className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-              <span>{selectedProduct.interest_rate}% interest</span>
+              <span>{formatCurrency(selectedProduct.expected_amount_to_pay)} expected</span>
             </div>
             <div className="flex items-center gap-1.5 text-xs">
               <Clock className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
@@ -956,7 +956,7 @@ function CreateLoanForm({ onSuccess }: { onSuccess: () => void }) {
           <p className="text-xs text-muted-foreground">
             {freqLabel[selectedProduct.repayment_frequency]} repayment -{" "}
             <span className="font-semibold text-foreground">
-              {formatCurrency(selectedProduct.principal_amount * Number(quantity || 1))} total
+              {formatCurrency(selectedProduct.expected_amount_to_pay * Number(quantity || 1))} expected total
             </span>
           </p>
         </div>
