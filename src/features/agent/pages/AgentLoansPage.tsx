@@ -828,11 +828,9 @@ function SealLegend() {
 
 function CreateLoanForm({ onSuccess }: { onSuccess: () => void }) {
   const [createLoan, { isLoading, isError, error }] = useCreateAgentLoanMutation();
-  const { data: borrowersRes, isLoading: borrowersLoading } = useGetAgentBorrowersQuery();
+  const { borrowers, isLoading: borrowersLoading } = useAllAgentBorrowers();
   const { data: productsRes, isLoading: productsLoading } = useGetAgentProductsQuery();
   const { toast } = useToast();
-
-  const borrowers = borrowersRes?.data?.data ?? [];
   const products = productsRes?.data ?? [];
   const activeProducts = products.filter((product) => product.is_active);
 
