@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import {
   Banknote,
+  Check,
+  ChevronDown,
   ChevronRight,
   Clock,
   Filter,
@@ -826,6 +828,112 @@ function SealLegend() {
   );
 }
 
+function BorrowerSelect({
+  borrowers,
+  value,
+  onChange,
+  isLoading,
+}: {
+  borrowers: Borrower[];
+  value: string;
+  onChange: (id: string) => void;
+  isLoading: boolean;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const filtered = useMemo(() => {
+    if (!search.trim()) return borrowers;
+    const lower = search.toLowerCase();
+    return borrowers.filter(
+      (b) =>
+        b.first_name.toLowerCase().includes(lower) ||
+        b.last_name.toLowerCase().includes(lower) ||
+        b.phone.includes(lower)
+    );
+  }, [borrowers, search]);
+
+  const selectedBorrower = useMemo(
+    () => borrowers.find((b) => b.id === value),
+    [borrowers, value]
+  );
+
+  return (
+    <div className="relative" ref={containerRef}>
+      <div
+        className="input-field mt-1 flex items-center justify-between cursor-pointer bg-transparent"
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <span className={!selectedBorrower ? "text-muted-foreground" : "truncate"}>
+          {isLoading
+            ? "Loading..."
+            : selectedBorrower
+            ? `${selectedBorrower.first_name} ${selectedBorrower.last_name} - ${selectedBorrower.phone}`
+            : "Select a borrower"}
+        </span>
+        <ChevronDown className="h-4 w-4 opacity-50 shrink-0" />
+      </div>
+
+      {isOpen && !isLoading && (
+        <div className="absolute z-10 mt-1 max-h-60 w-full overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md flex flex-col animate-in fade-in-80">
+          <div className="sticky top-0 z-20 bg-popover p-2 border-b">
+            <div className="relative">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <input
+                type="text"
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 pl-8"
+                placeholder="Search name or phone..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                onClick={(e) => e.stopPropagation()}
+              />
+            </div>
+          </div>
+          <div className="p-1 overflow-y-auto">
+            {filtered.length === 0 ? (
+              <div className="py-6 text-center text-sm text-muted-foreground">
+                No borrowers found.
+              </div>
+            ) : (
+              filtered.map((borrower) => (
+                <div
+                  key={borrower.id}
+                  className={`relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground ${
+                    value === borrower.id ? "bg-accent text-accent-foreground font-medium" : ""
+                  }`}
+                  onClick={() => {
+                    onChange(borrower.id);
+                    setIsOpen(false);
+                    setSearch("");
+                  }}
+                >
+                  {value === borrower.id && (
+                    <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
+                      <Check className="h-4 w-4" />
+                    </span>
+                  )}
+                  {borrower.first_name} {borrower.last_name} - {borrower.phone}
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function CreateLoanForm({ onSuccess }: { onSuccess: () => void }) {
   const [createLoan, { isLoading, isError, error }] = useCreateAgentLoanMutation();
   const { borrowers, isLoading: borrowersLoading } = useAllAgentBorrowers();
@@ -883,22 +991,12 @@ function CreateLoanForm({ onSuccess }: { onSuccess: () => void }) {
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div>
           <label className="text-xs font-medium text-muted-foreground">Borrower *</label>
-          <select
+          <BorrowerSelect
+            borrowers={borrowers}
             value={borrowerId}
-            onChange={(event) => setBorrowerId(event.target.value)}
-            className="input-field mt-1"
-            required
-            disabled={borrowersLoading}
-          >
-            <option value="">
-              {borrowersLoading ? "Loading..." : "Select a borrower"}
-            </option>
-            {borrowers.map((borrower) => (
-              <option key={borrower.id} value={borrower.id}>
-                {borrower.first_name} {borrower.last_name} - {borrower.phone}
-              </option>
-            ))}
-          </select>
+            onChange={setBorrowerId}
+            isLoading={borrowersLoading}
+          />
         </div>
 
         <div>
